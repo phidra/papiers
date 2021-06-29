@@ -14,27 +14,31 @@
 * [(ARTICLE) Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks](#article-contraction-hierarchies-faster-and-simpler-hierarchical-routing-in-road-networks)
    * [Node ordering](#node-ordering)
       * [TL;DR](#tldr)
-      * [principe général](#principe-général)
-      * [catégorie 1 = Edge difference](#catégorie-1--edge-difference)
-      * [catégorie 2 = Cost of Contraction](#catégorie-2--cost-of-contraction)
-      * [catégorie 3 = Uniformity](#catégorie-3--uniformity)
+      * [Principe général](#principe-général)
+      * [Catégorie 1 = Edge difference](#catégorie-1--edge-difference)
+      * [Catégorie 2 = Cost of Contraction](#catégorie-2--cost-of-contraction)
+      * [Catégorie 3 = Uniformity](#catégorie-3--uniformity)
          * [Contracted neighbors](#contracted-neighbors)
          * [Sum of original edges of the new shortcuts / Hop-quotient](#sum-of-original-edges-of-the-new-shortcuts--hop-quotient)
          * [Voronoï region](#voronoï-region)
-      * [catégorie 4 = Cost of Queries](#catégorie-4--cost-of-queries)
+      * [Catégorie 4 = Cost of Queries](#catégorie-4--cost-of-queries)
          * [Compréhension avec les mains](#compréhension-avec-les-mains)
          * [Illustration avec la "dead-end valley"](#illustration-avec-la-dead-end-valley)
          * [Implémentation du level](#implémentation-du-level)
          * [En quoi contracter les nodes à fort level plus tard nous aide ?](#en-quoi-contracter-les-nodes-à-fort-level-plus-tard-nous-aide-)
-      * [catégorie 5 = Global measures](#catégorie-5--global-measures)
-   * [VRAC À RÉORGANISER = contraction](#vrac-à-réorganiser--contraction)
+      * [Catégorie 5 = Global measures](#catégorie-5--global-measures)
+   * [Node contraction](#node-contraction)
+      * [Principe général](#principe-général-1)
+      * [Définitions](#définitions)
+      * [Quelques notes sur la recherche des witness-paths](#quelques-notes-sur-la-recherche-des-witness-paths)
+      * [Limiter le local-search](#limiter-le-local-search)
    * [VRAC À RÉORGANISER = pourquoi CH marche ?](#vrac-à-réorganiser--pourquoi-ch-marche-)
    * [VRAC À RÉORGANISER = propagation](#vrac-à-réorganiser--propagation)
       * [SOUS-VRAC À RÉORGANISER = stall-on-demand](#sous-vrac-à-réorganiser--stall-on-demand)
    * [VRAC À RÉORGANISER = Chapitre 6 = Experiments](#vrac-à-réorganiser--chapitre-6--experiments)
    * [VRAC À RÉORGANISER = Notes sur les notations utilisées](#vrac-à-réorganiser--notes-sur-les-notations-utilisées)
-      * [distance vs cost](#distance-vs-cost)
-      * [overlay graph](#overlay-graph)
+      * [Distance vs cost](#distance-vs-cost)
+      * [Overlay graph](#overlay-graph)
 
 ## Node ordering
 
@@ -65,7 +69,7 @@ return 1 + 1000*level + (1000*added_arc_count) / removed_arc_count + (1000*added
 
 Par ailleurs, [la thèse TCH](./2014-TDCH-thesis.md), utilise une combinaison linéaire de 4 critères, dont l'edge-quotient et la hierarchy-depth (ainsi que d'autres critères qui marchent bien avec les spécificités de TCH).
 
-### principe général
+### Principe général
 
 La partie de la thèse concernant l'ordering est le sous-chapitre **3.2 Node Order Selection** (du chapitre 3 = Cotnraction Hierarchies), entre les pages 14 et 22 incluses.
 
@@ -83,7 +87,7 @@ Le principe général est de contracter séquentiellement les noeuds, le prochai
 
 *Section 3.2.1  Lazy Updates* = explications sur un détail d'implémentation pour faire l'update du score des nodes (notamment, la *dégradation* du score d'un node) le plus tard possible.
 
-### catégorie 1 = Edge difference
+### Catégorie 1 = Edge difference
 
 **OBJECTIF** = la CH résultante reste sparse, i.e. ne contient que peu d'edges.
 
@@ -102,7 +106,7 @@ Edge difference = (nombre d'edges dans le graphe APRÈS contraction de U) - (nom
 NOTE : j'ai pas creusé, mais on dirait que (en théorie), l'edge difference de TOUS les nodes (et pas uniquement des voisins de U) peuvent être affectés par la contraction de U.
 En théorie, après contraction de U, il faudrait recalculer le score d'ordering de tous les nodes du graphe. En pratique, ne recalculer que les voisins semble être une approximation acceptable. Le papier propose également de recalculer la prio de tous les nodes du graphes à certains moments clés.
 
-### catégorie 2 = Cost of Contraction
+### Catégorie 2 = Cost of Contraction
 
 **OBJECTIF** = le temps nécessaire au preprocessing reste faible (ou en tout cas ne diverge pas).
 
@@ -114,11 +118,11 @@ C'est la recherche des witness-path qui prend le plus de temps de preprocessing.
 
 > That is the reason why we chose the sum of the search space sizes of the local Dijkstra searches for the cost of contraction for a node u, more precisely the number of settled nodes
 
-L'idée est de dire : "si un node est lourd à contracter, on essaye de le contracter plus tardivement". Ma compréhension des choses, c'est qu'en le contractant plus tard, il y aura moins de nodes dans le graphe de contraction (vu qu'on sera plus haut dans la hiérarchie, on aura entretemps **retiré** des nodes du graphe), donc le search-space sera plus petit.
+L'idée est de dire : "si un node est lourd à contracter, on essaye de le contracter plus tardivement". Ma compréhension des choses, c'est qu'en le contractant plus tard, il y aura moins de nodes dans le graphe de contraction (vu qu'on sera plus haut dans la hiérarchie, on aura entretemps **retiré** des nodes du graphe), donc le search-space utilisé lorsqu'on cherche des witness-paths sera plus petit.
 
 Note d'implémentation : c'est assez galère d'updater les scores des autres nodes lorsqu'on contracte un node U, puisque U peut apparaître dans le search-space size de beaucoup d'autres nodes... En pratique, donc, ils se contentent d'updater la taille du search-space-size des voisins de U.
 
-### catégorie 3 = Uniformity
+### Catégorie 3 = Uniformity
 
 **OBJECTIF** = répartir la contraction des nodes sur tout le graphe = éviter que des nodes proches soient contractés successivement.
 
@@ -140,7 +144,7 @@ Premier critère de cette catégorie = contracted neighbours (c'est assez logiqu
 >
 > Related to the contracted neighbors counter is another priority term, it also counts the number of already contracted nodes, but now on edges. To get a better intuition for this priority term, we can also say that we count the number of edges in the original graph a shortcut represents.
 
-Ma compréhension : chercehr à minimiser le nombre de hops réels que représente un shortcut, c'est surtout un moyen de s'assurer mécaniquement de répartir la contraction sur tous les nodes du graphe (p.ex. on ne contractera un node U proche d'un node V déjà contracté *QUE* s'il ne reste plus de nodes à contracter sans voisins déjà contractés).
+Ma compréhension : chercher à minimiser le nombre de hops réels que représente un shortcut, c'est surtout un moyen de s'assurer mécaniquement de répartir la contraction sur tous les nodes du graphe (p.ex. on ne contractera un node U proche d'un node V déjà contracté *QUE* s'il ne reste plus de nodes à contracter sans voisins déjà contractés).
 
 Ce critère m'intéresse beaucoup, car il est très proche du hop-quotient implémenté dans RoutingKit ([lien](https://github.com/phidra/RoutingKit/blob/a0776b234ac6e86d4255952ef60a6a9bf8d88f02/src/contraction_hierarchy.cpp#L563) : `(1000*added_hop_count) / removed_hop_count`).
 
@@ -156,7 +160,7 @@ Enfin, un autre avantage mentionné en passant est que si on diminue le hop-coun
 
 Je me suis contenté de survoler, mais en gros, la voronoi-region d'un node pas encore contracté augmente au fur et à mesure qu'on contracte ses voisins.  Du coup, il faut chercher à contracter PLUS TARDIVEMENT les nodes dont la voronoi region est la plus grande. Ça assurera qu'on répartit la contraction des nodes, et qu'on évitera de contracter des séquences linéaires de nodes.
 
-### catégorie 4 = Cost of Queries
+### Catégorie 4 = Cost of Queries
 
 **OBJECTIF** = garantir qu'au query-time, la profondeur des shortest-path-tree reste faible.
 
@@ -295,7 +299,7 @@ NdM : c'est cette façon de faire qui va garantir de gros écarts de ranks entre
 
 Dernière précision : tout ceci dépend de la profondeur des nodes dans un shortest-path-tree *D'UNE SOURCE DONNÉE*, comment on estime-ça ? Réponse = le `level` est une *borne supérieure* de la profondeur du SP-tree depuis toutes les sources possibles.
 
-### catégorie 5 = Global measures
+### Catégorie 5 = Global measures
 
 **OBJECTIF** = faire en sorte que les noeuds "importants" du graphe soient contractés en dernier.
 
@@ -328,88 +332,80 @@ Plus généralement, la notion de "centralité" (dont il existe plusieurs varian
 
 Je ne fais que survoler cette partie, qui n'a pas l'air implémentée en pratique.
 
-## VRAC À RÉORGANISER = contraction
+## Node contraction
 
-NdM : quand on cherche à contracter un noeud v
-- on va supprimer le noeud v du graphe
-- du coup, il faut ajouter des raccourcis partout où v est sur un plus court chemin (PCC)
-- si le plus court chemin entre le noeud u et le noeud w passe par v, il faut rajouter un raccourci de (u;w)
-- moi : inutile de regarder pour tous les noeuds du graphe : il suffit de regarder s'il y a des plus courts chemins entre deux noeuds VOISINS de v !
-- (en effet, si un PCC de u à w passe par v, alors il passera forcément par deux voisins de v)
-- le hic : comme à ce stade on travaille sur l'overlay graph (auquel il manque des noeuds, mais qui contient des edges supplémentaires) alors les "voisins" de v peuvent être très TRÈS nombreux, et très éloigné les uns des autres !
-- il peut donc être compliqué de rechercher les plus courts chemins entre tous les voisins de v :-(
+### Principe général
 
-Autres notes :
-- "witness" path = un chemin qui témoigne (i.e. qui "prouve") qu'il est inutile d'ajouter le shortcut pour le triplet (u,v,w) considéré
-- (en d'autres termes, un witnesse path est un plus court chemin de u à w qui ne passe pas par v)
+Le principe général est de contracter les nodes séquentiellement un par un, dans l'ordre indiqué par l'ordering. L'ordering évolue au fur et à mesure de l'avancée de la contraction : à chaque étape, on contracte le node le plus intéressant de tous les nodes d'une priority-queue. Le fait de contracter un node mets à jour les poids de certains des nodes de cette priority-queue (et donc possiblement change le prochain node à contracter).
+
+Pour contracter un node `v` :
+
+- contracter `v` revient à le supprimer du contraction-graph, tout en ajoutant (si nécessaire) des shortcuts pour garantir que le graphe résultant a les mêmes plus courts chemins avant et après la contraction de `v`
+- on itère sur toutes les paires d'edges `(e1, e2)` du produit cartésien `I x O` (où `I` représente les in-edges de `v` et `O` ses out-edges), donc les triplets de nodes `(u,v,w)`
+- cas 1 = s'il existe un plus court chemin de `u` à `w` **qui ne passe pas par** `v`, appelé **witness-path**, supprimer `v` du graphe n'aura pas d'impact sur ce witness-path (car il ne passe pas par `v`), et on peut donc supprimer `v` du graphe tout en garantissant que l'ensemble des PCC du graphe sont inchangés.
+- cas 2 = si le plus court chemin de `u` à `w` **passe par** `v`, il est nécessaire d'insérer un shortcut `u → w` pour que le contraction-graph "sans `v`" aie ses plus courts chemins inchangés
+
+La section 3.3 détaille la façon dont on contracte les nodes dans l'ordre donné par l'ordering. Comme on passe beaucoup de temps à faire des local-search (recherche de ces witness-paths), la majorité de la section est consacrée à l'optimisation de cette phase, en échangeant une amélioration du temps de preprocess contre une contraction possiblement inexacte.
+
+La section 3.4 qui suit juste derrière ne m'intéresse pas pour le moment (elle donne le lien avec Highway-Node routing, prédécesseur des CH).
+
+### Définitions
+
+**witness-path** = chemin prouvant (témoignant, d'où le nom de *witness*) qu'il est inutile d'ajouter le raccourci `u → w` lorsqu'on contracte `v`. Un witness-path est un plus court chemin entre `u` et `w` qui passe par un autre chemin que `u → v → w`.
+
+**overlay-graph** = par rapport à un graphe original, un overlay-graph est un graphe avec moins de noeuds, mais préservant les plus courts chemins entre les noeuds restants.
+
+**contraction-graph** (ma dénomination à moi) = le graphe qui évolue petit à petit au fur et à mesure de la contraction :
+
+- avant de commencer la contraction, il est identique au graphe original
+- à la fin de la contraction, il ne contient plus aucun noeud
+- au moment de contracter le noeud `v`, il contient tous les noeuds de rank **supérieur** au rank de `v`, et des shortcuts supplémentaires. Tous les noeuds de rank **inférieur** ont été supprimés précédemment (lors de leur propre contraction), et on a, si nécsesaire, ajouté des shortcuts à ce moment.
+
+**local-search** = lorsqu'on contracte un noeud `v`, c'est le fait de rechercher des witness-path pour toutes les paires `(u, w)` de prédecesseur+successeur (si on trouve un tel witness-path, il devient inutile d'ajouter un shortcut `u → w`.
+
+### Quelques notes sur la recherche des witness-paths
+
+Pour savoir si `v` participe à un plus court chemin ou non, inutile d'explorer tous les noeuds du graphe : il suffit de regarder s'il y a des plus courts chemins entre deux noeuds VOISINS de `v` (en effet, si un PCC de `x` à `y` passe par `v`, alors il passera forcément par deux voisins de `v`).
+
+Le hic : comme au moment de la contraction de `v` on travaille sur l'overlay-graph (auquel certes il manque des noeuds, mais qui contient des edges supplémentaires = les shortcuts) alors les "voisins" de `v` peuvent être très TRÈS nombreux, et très éloigné les uns des autres !
 
 > In G′, we face the following many-to-many shortest-path problem: For each source node u ∈ v+1..n with (u,v) ∈ E′and each target node w ∈ v+1..n with (v,w) ∈ E′, we want to compare the shortest-path distance d(u,w) with the shortcut length c(u,v) + c(v,w) in order to decide whether the shortcut is really needed
 
-- considérant deux NOEUDS u et w VOISINS de v tel que u → v → w soit un chemin (en effet, (u,v) ∈ G′ et (v,w) ∈ G′)
-- (dit autrement, on s'intéresse à tous les PRÉDÉCESSEURS u de v, et tous les SUCCESSEURS w de v)
-- on veut calculer la longueur d(u,w) du plus court chemin PCC(u,w), et la comparer avec c(u,v) + c(v,w) = la longueur du raccourci qu'on ajouterait en supprimant v
-- l'idée est de NE PAS ajouter le raccourci (u,w) si c(u,v) + c(v,w) > d(u,w), car ça voudra dire que le PCC(u,w) NE PASSE PAS par v (mais "contourne" v)
+- on considère deux NOEUDS `u` et `w` VOISINS de `v` tel que `u → v → w` soit un chemin ; `(u,v) ∈ G′` et `(v,w) ∈ G′)` (dit autrement, on s'intéresse à tous les PRÉDÉCESSEURS `u` de `v`, et tous les SUCCESSEURS `w` de `v`)
+- on veut calculer la longueur `d(u,w)` du plus court chemin `PCC(u,w)`, et la comparer avec `c(u,v) + c(v,w)` = la longueur du shortcut qu'on ajouterait en supprimant `v`
+- l'idée est de NE PAS ajouter le raccourci `(u,w)` si `c(u,v) + c(v,w) > d(u,w)`, car ça voudra dire que le `PCC(u,w)` NE PASSE PAS par `v` (mais "contourne" `v` en empruntant un autre chemin)
 
 > A simple way to implement this is to perform a forward shortest-path search in the current overlay graph G′ from each source, ignoring node v, until all targets have been found
 
-- pour CHAQUE prédécesseur u de v, on calcule un dijkstra pour calculer le plus court chemin de u à N'IMPORTE QUEL noeud de G′
-- (en effet, dijkstra peut calculer le plus court chemin d'une source à TOUS les sommets du graphe)
-- (note : comme on est dans l'overlay graph, les prédécesseurs de v incluent les prédécesseurs via des raccourcis -> il peut y en avoir beaucoup, et très éloignés de v !)
-- ainsi, on calculera toute les distances de u à tous les noeuds de G′ et notamment à tous les w, donc on aura calculé d(u,w), ce qui nous intéresse
+Pour CHAQUE prédécesseur `u` de `v`, on fait un dijkstra multi-target pour calculer le plus court chemin de `u` à plusieurs noeud de `G′` (critère d'arrêt = le cost des prochains noeuds à settle est plus grand que le cost max de `max(cost(u,v)) + max(cost(v,w))`)
 
-> We can also stop the search from u when it has reached distance d(u,v) + max{c(v,w) : (v,w) ∈ E′}
-- lorsqu'on cherche le PCC de u à w (mais ne passant pas par v), même si on en trouve un...
-- ...si le PCC trouvé a un coût supérieur à d(u,v) + max{cost(v, w)}...
-- ... alors ce PCC NE NOUS SERVIRA PAS à exclure le raccourci passant par v (car on est alors sûr que le PCC trouvé sera plus LONG que le raccourci)
+Note : comme on est dans l'overlay-graph, les prédécesseurs de `v` incluent les prédécesseurs via des raccourcis -> il peut y en avoir beaucoup, et très éloignés de `v` !
 
-> Our actual implementation uses a simple, asymmetric form of bidirectional search inspired by [10]: For each target node w we perform a single-hop backward search. For each edge (x,w) ∈ E′ we store a bucket entry (c(x,w), w) with node x. 
+### Limiter le local-search
 
-- pour tous les PRÉDÉCESSEURS de w, on stocke une entrée dans un bucket (hashtable?) avec le coût de l'edge du prédécesseur à w
+**Pourquoi limiter ?** Pour optimiser : la local-search d'un node est faite plusieurs fois : au moins une fois au moment où on contracte le node, et une ou plusieurs fois supplémentaire auparavant pour (re)calculer son score d'ordering. C'est ce qui prend le plus de temps CPU lors du preprocessing.
 
-> This way, forward search from u can be limited to distance :
+**Pourquoi le local-search peut prendre du temps ?** On pourrait penser que chaque noeud ayant un degré assez faible (disons inférieur à 10), explorer exhaustivement le search-space pour toutes les paires `(u,w)` est rapide ; mais en fait non !
 
-```
-c(u,v)+ max{c(v,w)} − min{c(x,w)}
-        w:(v,w)∈E′    x:(x,w)∈E′
-```
-L'objectif semble être de prune au plus vite le dijkstra pour pas qu'il nous coûte trop cher.  On semble additionner :
-- le coût de l'edge d'entrée (u,v)
-- le coût MAXIMAL de l'edge de sortie (v,w)
-Auquel on retranche : le coût du plus petit prédécesseur de w (QUESTIOn : même s'il n'est pas un successeur de u ?).
+Déjà parce qu'il suffit d'un très grand tronçon dans les in-edges ou out-edges de `v` (e.g. un tronçon ferry de 100 km) pour que le local-search de `v` aie un énorme search-space.
 
-QUESTION : je ne comprends pas bien pourquoi on peut limiter le coût max du dijkstra à ça ?
+Et surtout : au fur et à mesure de l'avancée de la contraction on ajoute des shortcuts au contraction-graph ! Du coup, le degré moyen des nodes du graphe augmente (possiblement fortement !) au fur et à mesure de la contraction.
 
-- Je suppose en préambule qu'il s'agit d'être sûr que tous les PCC au delà de cette valeur seraient plus LONG que c(u,v) + c(v,w)
-- ça revient donc à dire qu'en majorant  max{c(v,w)} − min{c(x,w)}  ,  on est sûr de majorer  c(v,w)  :
-    + max{c(v,w)} − min{c(x,w)}   est FORCÉMENT supérieur à   c(v,w)
-- Je vois 4 cas :
-    1.  (v,w) a le coût le plus GRAND des successeurs de v  ET  (v,w) a le coût le plus PETIT des prédécesseurs de w
-        si v est le plus petit des successeurs de w, par définition, (v,w) est le moyen le plus rapide de relier v à w
-    2.  (v,w) a le coût le plus GRAND des successeurs de v  ET  (v,w) a le coût le plus GRAND des prédécesseurs de w
-    3.  (v,w) a le coût le plus PETIT des successeurs de v  ET  (v,w) a le coût le plus PETIT des prédécesseurs de w
-    4.  (v,w) a le coût le plus PETIT des successeurs de v  ET  (v,w) a le coût le plus GRAND des prédécesseurs de w
+**Limiter ne va-t-il pas invalider la correctness de la contraction ?** Réponse courte : non.
 
-Mmmmh, non, décidément, c'est pas clair...
+Réponse longue = si on arrête la local-search de façon prématurée (avant qu'elle ait eu le temps de rechercher tous les plus courts chemins possibles de `u` à `w`), on va ajouter un shortcut `u → w`, et le seul risque qu'on prend, c'est de l'ajouter *à tort*, car on n'a pas pu pousser la local-search jusqu'à trouver le witness-path qui aurait prouvé que ce shortcut `u → w` était en fait inutile.
 
-> When reaching a node x, we scan its bucket entries. For each entry (C,w), we can infer that there is a path from u to w of length d(u,x)+C.
+Ces shortcuts inutiles ne sont pas sans conséquences à la fois sur les perfs au query-time (car on a une CH avec un peu plus de shortcuts) et sur les perfs au preprocess-time (car avoir plus de shorcuts au moment de contracter un node N augmente le travail à faire pour contracter les nodes de rank R > N), mais le calcul des plus courts-chemins au query-time restera parfaitement correct.
 
-- pour chaque node x atteint dans le dijktra, on sait qu'on peut atteindre w en d(u,x) + c(x,w)
-- ce dernier terme c(x,w) est déjà dans la bucket-list
+**Comment limiter le local-search ?** En gros, il y a deux voies :
 
-> Since exact shortest path search for contraction can be rather expensive, we have implemented two ways to limit the range of searches: We can limit the number of hops (edges) used in any path〈u,...,w〉, and we can limit the total search space size of a forward search
+> Limiting the number of settled nodes is straightforward, but, in our experience, leads to more dense remaining graphs and does not speed up the contraction a lot. However, if we only use it to estimate the edge difference and the number of new edges and perform the actual contraction without limit, it speedups the node ordering without severe disadvantages.
 
-- mon interprétation de "limiter le total search space size" = on limite le nombre de NOEUDS possibles dans la recherche locale du plus court chemin (on arrête d'explorer quand on a exploré Nmax noeuds)
-- mon interprétation de "limiter le nombre de hops" = on limite le nombre d'EDGES possibles dans un plus court chemin (on arrête d'explorer quand un chemin contient Emax edges)
-- QUESTION = mais tel que l'article le présente, limiter le nombre de hops = limiter le nombre d'edges dans le chemin ? Du coup quelle différence avec limiter le search space ?
+Le reste de la section décrit des techniques avancées pour implémenter la hop-limit (1-hop limit, 2-hop limit, utilisant un bucket, etc.)
+
+Un détail = réduction des edges on-the-fly (si on a le chemin `A--B--C--D` où `B` et `C` sont de degré 2, alors on peut remplacer ce groupe de 3 edges par un edge unique `A--D`)
 
 ## VRAC À RÉORGANISER = pourquoi CH marche ?
-
-NdM = pourquoi CH accélère le routing ?
-- parce qu'on ne peut aller QUE vers des noeuds d'ordre supérieur
-- à chaque nouveau noeud relaxé dans un dijkstra unidirectionnel (peu importe le sens), on restreint le nombre de noeud qu'on peut explorer
-- on les restreint même de plus en plus au fur et à mesure qu'on avance dans l'algo :
-    + supposons que le graphe ait 10000 nodes
-    + alors lorsqu'un node relaxé a l'order 9500, il ne nous reste plus que 500  (au lieu de 10000) noeuds possibles à explorer
 
 NdM = pourquoi est-ce important de répartir la contraction uniformément ?
 - car (en reprenant l'exemple juste au dessus), les 500 nodes restants sont tous dans mon voisinage, il faudra que je les explore tous
@@ -491,7 +487,7 @@ NdM = pour un nombre de nodes donné, la taille du graphe quantifie aussi la qua
 
 ## VRAC À RÉORGANISER = Notes sur les notations utilisées
 
-### distance vs cost
+### Distance vs cost
 
 - d(u,w) = distance(u,w) = coût du plus court chemin de u à w. (u,w) n'est pas forcément un edge
 - c(u,w) = cost(u,w) = poids de l'edge (u,w). (u,w) est forcément un edge.
@@ -509,7 +505,7 @@ Exemple de cas où l'edge direct `AB` n'est pas le plus court chemin entre `A` e
      ------------
 ```
 
-### overlay graph
+### Overlay graph
 
 > Recall from the introduction that when contracting node v, we are dealing with an overlay graph G′=(V′,E′) with V′=v..n and an edge set E′ that preserves shortest path distances wrt the input graph.
 
