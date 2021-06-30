@@ -18,6 +18,7 @@
       * [Catégorie 1 = Edge difference](#catégorie-1--edge-difference)
       * [Catégorie 2 = Cost of Contraction](#catégorie-2--cost-of-contraction)
       * [Catégorie 3 = Uniformity](#catégorie-3--uniformity)
+         * [interlude = autres notes plus anciennes sur l'importance de répartir la contraction](#interlude--autres-notes-plus-anciennes-sur-limportance-de-répartir-la-contraction)
          * [Contracted neighbors](#contracted-neighbors)
          * [Sum of original edges of the new shortcuts / Hop-quotient](#sum-of-original-edges-of-the-new-shortcuts--hop-quotient)
          * [Voronoï region](#voronoï-region)
@@ -32,13 +33,11 @@
       * [Définitions](#définitions)
       * [Quelques notes sur la recherche des witness-paths](#quelques-notes-sur-la-recherche-des-witness-paths)
       * [Limiter le local-search](#limiter-le-local-search)
-   * [VRAC À RÉORGANISER = pourquoi CH marche ?](#vrac-à-réorganiser--pourquoi-ch-marche-)
    * [VRAC À RÉORGANISER = propagation](#vrac-à-réorganiser--propagation)
       * [SOUS-VRAC À RÉORGANISER = stall-on-demand](#sous-vrac-à-réorganiser--stall-on-demand)
    * [VRAC À RÉORGANISER = Chapitre 6 = Experiments](#vrac-à-réorganiser--chapitre-6--experiments)
    * [VRAC À RÉORGANISER = Notes sur les notations utilisées](#vrac-à-réorganiser--notes-sur-les-notations-utilisées)
       * [Distance vs cost](#distance-vs-cost)
-      * [Overlay graph](#overlay-graph)
 
 ## Node ordering
 
