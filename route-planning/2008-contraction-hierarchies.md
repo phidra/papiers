@@ -132,6 +132,23 @@ L'idée derrière cette catégorie de critères est que si on a un chemin linéa
 
 NdM = avec mes yeux naïfs, ce critère d'uniformité semble se rapprocher pas mal de la notion de hierarchy-depth, puisque dans les deux cas, on cherche à ce que les shortcuts créés "sautent" plusieurs noeuds d'un coup... Je pense que la différence est dans le moyen d'y parvenir : les critères d'uniformité sont un moyen indirect à l'ordering-time, là où la hierarchy-depth est un moyen plus directement lié à ce qui se passe au query-time (mais peut-être également plus approximé car on travaille avec l'upper-bound de la profondeur du shortest-path-tree)
 
+#### interlude = autres notes plus anciennes sur l'importance de répartir la contraction
+
+NdM = pourquoi est-ce important de répartir la contraction uniformément ?
+- car, lorsque je suis au rank 9500 sur 10000, si les 500 nodes restants sont tous dans mon voisinage, il faudra que je les explore tous
+- si à l'inverse ils sont répartis uniformément sur le graphe et que du coup je n'en ai que 20 dans mon voisinage, alors je n'aurais que 20 noeuds (au lieu de 500) à explorer pour terminer l'exploration de cette branche du graphe
+- dit autrement : la répartition des noeuds du graphe permet d'élaguer rapidement des branches du graphe qu'on n'explorera pas
+
+Encore une autre façon de voir les choses :
+-  le meeting-node où se rejoignent les deux dijkstra unidirectionnels sera le node d'ordre le plus élevé sur le plus court chemin réel (qui, lui, ne dépend que du graphe original)
+-  si l'ordering a regroupé TOUS les nodes d'ordre élevés à un endroit (par exemple au nord), alors on est sûr que le meeting point se trouvera au nord
+-  et si on veut faire un trajet du sud au nord, le dijkstra forward qui part du sud devra explorer toute la France pour trouver son meeting-point au nord
+
+Par ailleurs, concernant le preuve que CH accélère les queries en limitant le search space size, le papier suivant donne des bornes supérieures des search-space size pour certaines classes de graphes :
+- Reinhard Bauer, Tobias Columbus, Ignaz Rutter, and Dorothea Wagner.
+- Search-Space Size in Contraction Hierarchies.
+- In Proceedings of the 40th Inter-national Colloquium on Automata, Languages, and Programming (ICALP’13),volume 7965 ofLecture Notes in Computer Science, pages 93–104. Springer,2013.
+
 #### Contracted neighbors
 
 > Contracted neighbors = count for each node the number of previous neighbors that have been contracted.
@@ -405,24 +422,6 @@ Le reste de la section décrit des techniques avancées pour implémenter la hop
 
 Un détail = réduction des edges on-the-fly (si on a le chemin `A--B--C--D` où `B` et `C` sont de degré 2, alors on peut remplacer ce groupe de 3 edges par un edge unique `A--D`)
 
-## VRAC À RÉORGANISER = pourquoi CH marche ?
-
-NdM = pourquoi est-ce important de répartir la contraction uniformément ?
-- car (en reprenant l'exemple juste au dessus), les 500 nodes restants sont tous dans mon voisinage, il faudra que je les explore tous
-- si à l'inverse ils sont répartis uniformément sur le graphe et que du coup je n'en ai que 20 dans mon voisinage, alors je n'aurais que 20 noeuds (au lieu de 500) à explorer pour terminer l'exploration de cette branche du graphe
-- Dit autrement : la répartition des noeuds du graphe permet d'élaguer rapidement des branches du graphe qu'on n'explorera pas.
-- Une autre façon de voir les choses :
-    + le meeting-node où se rejoignent les deux dijkstra unidirectionnels sera le node d'ordre le plus élevé sur le chemin
-    + si l'ordering a regroupé TOUS les nodes d'ordre élevés à un endroit (par exemple au nord)
-    + alors on est sûr que le meeting point se trouvera au nord
-    + et si on veut faire un trajet du sud au nord, le dijkstra qui part du sud devra explorer toute la France pour trouver son meeting-point au nord
-
-Par ailleurs, concernant le preuve que CH accélère les queries en limitant le search space size, la même thèse donne des références :
-- In [BCRW13,Col12], a theoretical framework to study Contraction Hierarchies was developed. It enables proving upper bounds on the search space size for certain classes of graphs
-    + Reinhard Bauer, Tobias Columbus, Ignaz Rutter, and Dorothea Wagner.
-    + Search-Space Size in Contraction Hierarchies.
-    + In Proceedings of the 40th Inter-national Colloquium on Automata, Languages, and Programming (ICALP’13),volume 7965 ofLecture Notes in Computer Science, pages 93–104. Springer,2013.
-
 ## VRAC À RÉORGANISER = propagation
 
 bidirectional dijkstra :
@@ -504,11 +503,3 @@ Exemple de cas où l'edge direct `AB` n'est pas le plus court chemin entre `A` e
     \     3      /
      ------------
 ```
-
-### Overlay graph
-
-> Recall from the introduction that when contracting node v, we are dealing with an overlay graph G′=(V′,E′) with V′=v..n and an edge set E′ that preserves shortest path distances wrt the input graph.
-
-Au moment où on contracte le noeud v, l'overlay graph G' :
-- contient les noeuds d'ordre v à n (les autres noeuds ont déjà été contractés, donc ne sont plus dans l'overlay graph)
-- contient les edges originaux, ainsi que les raccourcis créés lorsqu'on a contractés les noeuds de 1 à (v-1)
