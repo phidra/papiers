@@ -8,8 +8,18 @@
 
 **Notes synthétiques** :
 
-- le travail de synthèse reste à faire
-- il y a au moins une synthèse partielle pour le node-ordering, cf. plus bas
+- CH = technique permettant de calculer des plus courts chemins dans un graphe de façon très efficace (dérivé de Dijkstra, mais beaucoup beaucoup plus efficace)
+- pour cela, deux phases :
+    * phase 1 = preprocess = on construit une structure de données représentant le graphe (une CH = une *Contraction Hierarchy*) qui va être utilisée pour répondre aux queries
+    * phase 2 = query = on utilise la CH pour répondre de façon très efficace aux queries de plus court chemin entre deux nodes du graphe
+- les notions clés sont :
+    * preprocess : contraction = pour chaque noeud, ajouter des shortcuts entre ses prédecesseurs et ses successeurs, de sorte que supprimer le noeud ne modifie pas les plus courts chemins du graphe.
+    * preprocess : ordering = choisir l'ordre dans lequel on contracte les nodes ; c'est là-dedans que se concentre la difficulté de la technique.
+    * query-time : calcul du chemin contracté = dijkstra bidirectionnel modifié pour ajouter une contrainte = chaque sens du Dijkstra ne peux relaxer que des edges vers des nodes de rank supérieur
+    * query-time : expand des shortcuts = calcul du chemin réel
+- efficacité : d'autres papiers ultérieurs montrent que l'efficacité de la technique dépend du type de graphe (coup de bol : ça marche très bien sur les graphes routiers)
+- technique très efficace : sur des graphe avec plusieurs dizaines de millions de nodes et edges, la query n'a besoin de settle que entre 800 et 1200 nodes dans le PIRE cas
+
 
 * [(ARTICLE) Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks](#article-contraction-hierarchies-faster-and-simpler-hierarchical-routing-in-road-networks)
    * [Node ordering](#node-ordering)
@@ -33,17 +43,27 @@
       * [Définitions](#définitions)
       * [Quelques notes sur la recherche des witness-paths](#quelques-notes-sur-la-recherche-des-witness-paths)
       * [Limiter le local-search](#limiter-le-local-search)
-   * [VRAC À RÉORGANISER = propagation](#vrac-à-réorganiser--propagation)
-      * [SOUS-VRAC À RÉORGANISER = stall-on-demand](#sous-vrac-à-réorganiser--stall-on-demand)
-   * [VRAC À RÉORGANISER = Chapitre 6 = Experiments](#vrac-à-réorganiser--chapitre-6--experiments)
-   * [VRAC À RÉORGANISER = Notes sur les notations utilisées](#vrac-à-réorganiser--notes-sur-les-notations-utilisées)
-      * [Distance vs cost](#distance-vs-cost)
+   * [Query](#query)
+      * [Principe général](#principe-général-2)
+      * [Notion à comprendre = le comportement à la query dépend de l'ordering](#notion-à-comprendre--le-comportement-à-la-query-dépend-de-lordering)
+      * [Mes réflexions au sujet du critère d'arrêt](#mes-réflexions-au-sujet-du-critère-darrêt)
+      * [Path reconstruction](#path-reconstruction)
+      * [Stall-on-demand](#stall-on-demand)
+   * [Chapitre 4 = Applications](#chapitre-4--applications)
+      * [Application aux queries many-to-many = bucket-CH](#application-aux-queries-many-to-many--bucket-ch)
+   * [Chapitre 5 = Experiments](#chapitre-5--experiments)
+      * [setup d'évaluation (5.3 Methodology)](#setup-dévaluation-53-methodology)
+      * [recherche des paramètres optimaux](#recherche-des-paramètres-optimaux)
+      * [résultats](#résultats)
+   * [Appendix A = Implementation et B = Code Documentation](#appendix-a--implementation-et-b--code-documentation)
 
 ## Node ordering
 
 ### TL;DR
 
 Le principe général est de contracter séquentiellement les noeuds, le prochain noeud à ordonner est celui qui minimise (grâce à une priority-queue) un score.
+
+Un point important à comprendre = on construit l'ordering au fur et à mesure (puisque l'ordre définitif d'un noeud dépend de la contraction des nodes qui avaient un ordre plus faible), et ce n'est qu'à la toute fin de la contraction qu'on le connaît définitivement. Dit autrement, tant qu'on n'a pas fini la contraction, on ne connait PAS (du moins, pas intégralement) l'ordering final.
 
 Le score est une combinaison linéaire de critères. Le papier présente 8 critères, répartis selon 5 catégories :
 Les 8 critères de priorité proposés sont classés en 5 catégories :
@@ -62,6 +82,8 @@ Note : [l'implémentation de RoutingKit](https://github.com/phidra/RoutingKit/bl
 - l'edge-quotient (proche de l'edge-difference)
 - le hop-quotient (à rapprocher de l'uniformity)
 
+Enfin, plus généralement, les deux idées principales derrière un ordering bien approprié sont l'edge différence et la répartition des nodes.
+
 ```cpp
 return 1 + 1000*level + (1000*added_arc_count) / removed_arc_count + (1000*added_hop_count) / removed_hop_count;
 ```
@@ -78,9 +100,11 @@ La partie de la thèse concernant l'ordering est le sous-chapitre **3.2 Node Ord
 >
 > The priority of a node u is the linear combination of several priority terms and estimates the attractiveness to contract this node
 
-Le principe général est de contracter séquentiellement les noeuds, le prochain noeud à ordonner étant à chaque étape celui qui minimise (grâce à une priority-queue) un score d'ordering.
+Le principe général est de contracter séquentiellement les noeuds, le prochain noeud à ordonner étant à chaque étape celui qui minimise (grâce à une priority-queue) un score d'ordering. Formulation intéressante : *the node order partition the graph into N distincts levels*.
 
-**Important** : la qualité de l'ordering a une forte importance sur la qualité de la CH résultante. La [thèse WCH](./2014-customizable-contraction-hierarchies.md) a une citation (et des références) sur le sujet :
+**Important** : la qualité de l'ordering a une forte importance sur la qualité de la CH résultante. À noter qu'un mauvais ordering degradera non seulement le query-time, mais également le preprocessing-time.
+
+La [thèse WCH](./2014-customizable-contraction-hierarchies.md) a une citation (et des références) sur le sujet :
 
 > But finding an order which minimizes the amount of added shortcuts is known to be NP-hard [BCK+10]
 
@@ -103,7 +127,7 @@ Edge difference = (nombre d'edges dans le graphe APRÈS contraction de U) - (nom
 À noter qu'un critère dérivé semble être *New edges* = compter les nouveaux edges ajoutés au graphe par la contraction de U (mais d'après le papier, ce critère n'est pas intéressant, et ils l'ont ignoré).
 
 NOTE : j'ai pas creusé, mais on dirait que (en théorie), l'edge difference de TOUS les nodes (et pas uniquement des voisins de U) peuvent être affectés par la contraction de U.
-En théorie, après contraction de U, il faudrait recalculer le score d'ordering de tous les nodes du graphe. En pratique, ne recalculer que les voisins semble être une approximation acceptable. Le papier propose également de recalculer la prio de tous les nodes du graphes à certains moments clés.
+En théorie, après contraction de U, il faudrait recalculer le score d'ordering de tous les nodes du graphe. En pratique, ne recalculer que les voisins semble être une approximation acceptable. Le papier propose également de recalculer la prio de tous les nodes du graphes à certains moments clés. Une autre page sur laquelle j'étais tombé (que je ne retrouve plus) suggérait également de recalculer intégralement le score d'ordering de tous les nodes (plutôt que juste l'approximer par la mise à jour des voisins des nodes contractés) lorsqu'on a contracté la moitié des nodes.
 
 ### Catégorie 2 = Cost of Contraction
 
@@ -369,7 +393,7 @@ La section 3.4 qui suit juste derrière ne m'intéresse pas pour le moment (elle
 
 **witness-path** = chemin prouvant (témoignant, d'où le nom de *witness*) qu'il est inutile d'ajouter le raccourci `u → w` lorsqu'on contracte `v`. Un witness-path est un plus court chemin entre `u` et `w` qui passe par un autre chemin que `u → v → w`.
 
-**overlay-graph** = par rapport à un graphe original, un overlay-graph est un graphe avec moins de noeuds, mais préservant les plus courts chemins entre les noeuds restants.
+**overlay-graph** = par rapport à un graphe original, un overlay-graph est un graphe avec moins de noeuds, mais préservant les plus courts chemins entre les noeuds restants. On voit aussi passer le terme de **remaining-graph**.
 
 **contraction-graph** (ma dénomination à moi) = le graphe qui évolue petit à petit au fur et à mesure de la contraction :
 
@@ -378,6 +402,18 @@ La section 3.4 qui suit juste derrière ne m'intéresse pas pour le moment (elle
 - au moment de contracter le noeud `v`, il contient tous les noeuds de rank **supérieur** au rank de `v`, et des shortcuts supplémentaires. Tous les noeuds de rank **inférieur** ont été supprimés précédemment (lors de leur propre contraction), et on a, si nécsesaire, ajouté des shortcuts à ce moment.
 
 **local-search** = lorsqu'on contracte un noeud `v`, c'est le fait de rechercher des witness-path pour toutes les paires `(u, w)` de prédecesseur+successeur (si on trouve un tel witness-path, il devient inutile d'ajouter un shortcut `u → w`.
+
+**remaining graph** = l'état du graphe à l'issue de la contraction d'un node (c'est lui qui a de moins en moins de nodes).
+
+Side-note : même si un edge `AB` existe, le plus court chemin entre `A` et `B` n'est pas forcément d'emprunter l'edge `AB`. Par exemple, dans le cas illustré ci-dessous, le PCC est plutôt par `A → X → B` :
+
+```
+    1.----X-----.1
+    /            \
+---A              B----
+    \     3      /
+     ------------
+```
 
 ### Quelques notes sur la recherche des witness-paths
 
@@ -411,7 +447,7 @@ Et surtout : au fur et à mesure de l'avancée de la contraction on ajoute des s
 
 Réponse longue = si on arrête la local-search de façon prématurée (avant qu'elle ait eu le temps de rechercher tous les plus courts chemins possibles de `u` à `w`), on va ajouter un shortcut `u → w`, et le seul risque qu'on prend, c'est de l'ajouter *à tort*, car on n'a pas pu pousser la local-search jusqu'à trouver le witness-path qui aurait prouvé que ce shortcut `u → w` était en fait inutile.
 
-Ces shortcuts inutiles ne sont pas sans conséquences à la fois sur les perfs au query-time (car on a une CH avec un peu plus de shortcuts) et sur les perfs au preprocess-time (car avoir plus de shorcuts au moment de contracter un node N augmente le travail à faire pour contracter les nodes de rank R > N), mais le calcul des plus courts-chemins au query-time restera parfaitement correct.
+Ces shortcuts inutiles ne sont pas sans conséquences puisqu'ils dégradent à la fois les perfs au query-time (car on a une CH avec un peu plus de shortcuts) et les perfs au preprocess-time (car avoir plus de shorcuts au moment de contracter un node N augmente le travail à faire pour contracter les nodes de rank R > N), mais les plus courts-chemins calculés au query-time resteront parfaitement exacts quoi qu'il arrive. L'enjeu est donc de trouver le meilleur compromis entre la limitation du local-search et les shortcuts inutiles ajoutés.
 
 **Comment limiter le local-search ?** En gros, il y a deux voies :
 
@@ -421,84 +457,294 @@ Le reste de la section décrit des techniques avancées pour implémenter la hop
 
 Un détail = réduction des edges on-the-fly (si on a le chemin `A--B--C--D` où `B` et `C` sont de degré 2, alors on peut remplacer ce groupe de 3 edges par un edge unique `A--D`)
 
-## VRAC À RÉORGANISER = propagation
+## Query
 
-bidirectional dijkstra :
-- forward dans G↑
-- backward dans G↓
-- meeting node = le noeud qui a l'ordre le plus élevé du path trouvé à la query
-- (NdM : d'où l'importance de spread uniformément la contraction : si tous les noeuds d'ordre élevés sont au même endroit, ça va pas aller)
+**TL;DR** :
 
-### SOUS-VRAC À RÉORGANISER = stall-on-demand
+- dijkstra bidirectionnel sur `G↑` et `G↓`
+- contrainte = grimper les ranks dans les deux sens de propagation
+- il faut être vigilant sur le critère d'arrêt du bidir-dijkstra, car il est propre aux CH
+- pour récupérer le chemin réel, path reconstruction = unpacker les raccourcis
+- stall-on-demand pour optimiser les queries
+
+### Principe général
+
+À la query, le principe général est un dérivé du dijkstra bidirectionnel :
+
+- le sens forward utilise le graphe upward `G↑`
+- le sens backward utilise le graphe downward `G↓`
+- **contrainte** : la propagation se fait *obligatoirement* vers les nodes de rank supérieur (c'est valable dans les DEUX sens, y compris dans le sens backward, ce qui peut sembler contre-intuitif, mais c'est en fait logique car dans un dijkstra bidir, la propagation backward sur `G↓` se fait à rebours).
+- les meeting nodes (il peut y en avoir plusieurs) des deux sens de propagation seront les nodes de haut ranks
+- notamment, sur le plus court chemin renvoyé au final, le meeting-node des deux sens sera le node de plus haut rank de tout le chemin (dans l'exemple ci-dessous avec `SABCDET`, il s'agit de `D`)
+- le couple CH {preprocess+query} garantit de renvoyer le plus court chemin, car 1. chaque overlay-graph forward/backward conserve les plus courts chemins (grâce aux raccourcis ajoutés) et 2. si un PCC existe, les deux sens de propagation se rejoindront sur un meeting-node appartenant à ce plus court-chemin (le node de plus haut rank)
+- **attention** : à cause de la façon particulière dont les CH construisent les graphes forward et backward, le critère d'arrêt du dijkstra bidirectionnel pour CH **ne peut pas être** (comme pour un dijkstra bidirectionnel classique) le fait d'avoir trouvé un meeting-node !
+- à la place, on arrête un sens de propagation lorsque le cost des prochains noeuds settled sont supérieurs au cost du plus court chemin trouvé jusqu'ici (c'est un peu moins optimal que le critère classique, mais comme la propagation n'explore que log(N) noeuds, c'est pas gênant)
+- last but not least, une fois le plus court chemin trouvé (il est la concaténation d'un forward-path et d'un backward-path qui 1. ont un meeting-node commun et 2. a le coût du chemin le plus petit possible parmi les candidats), on dispose d'un chemin **contracté** (i.e. certains des edges de ce chemin sont peut-être des raccourcis), il faut *unpacker* ces raccourcis (les remplacer par la liste d'edges *réels* qu'ils représentent) pour accéder au chemin réel final.
+
+NOTE : la thèse a une façon intéressante de représenter graphiquement les ranks des nodes : plus le node est haut sur le schéma, plus son rank est elevé (ça évite de surcharger les schémas en annotant les ranks).
+
+### Notion à comprendre = le comportement à la query dépend de l'ordering
+
+- étant donné un OriginalGraph, le plus court chemin entre `S` et `T` est fixé (et ne dépend que du graphe), par exemple `S-A-B-C-D-E-T`
+- ce plus court chemin existe et est fixé, indépendamment de l'ordering qu'on va choisir, ou bien de la CH qu'on s'apprête à construire
+- notamment, lorsqu'on fait l'ordering des nodes du graphe, chacun des nodes `SABCDET` se voit attribuer un rank, par exemple :
+```
+S   A   B   C   D   E   T
+8   21  10  3   48  19  14
+```
+- si on s'intéresse à ce PCC précis, ce qui se passera au query-time est fixé par cet ordering :
+    + notamment, le meeting-node des deux dijkstra sur ce chemin sera le node du chemin ayant le rank le plus élevé (ici, `D=48`).
+    + de même, le forward-path sur ce PCC précis est fixé par l'ordering et sera `S-A-D` (les nodes `B` et `C` n'y apparaissent pas car ils font partie du shortcut `A-D`)
+    + de même, le backward-path sur ce PCC précis est fixé par l'ordering et sera `T-E-D`
+- **conclusion** = même si le plus court chemin entre `S` et `T` sera toujours le même quoi qu'on fasse (`SABCDET`), les caractéristiques des queries dépendent de l'ordering.
+
+(NdM : d'où l'importance de répartir uniformément la contraction sur tout le graphe : si tous les noeuds d'ordre élevés sont au même endroit, ça va pas aller)
+
+### Mes réflexions au sujet du critère d'arrêt
+
+**TL;DR** : en gros, je ne suis pas encore tout à fait convaincu qu'on ne puisse pas arrêter le dijkstra dès qu'on a trouvé un meeting-node *en théorie*, mais ça paraît compliqué *en pratique*.
+
+> abort the forward/backward search process when all keys in the respective priority queue are greater than the tentative shortest-path length (abort-on-success criterion). Note that we are not allowed to abort the entire query as soon as both search scopes meet for the first time.
+
+Section 3.5, figure 20, page 29 = exemple de cas illustrant qu'il ne faut pas arrêter le dijkstra dès qu'on a trouvé un meeting-node (comme on l'aurait fait sur un dijkstra bidir classique).
+
+NdM : je suis pas encore tout à fait convaincu, on dirait qu'en itérant sur tous les successeurs des nodes déjà settled (comme dans un dijkstra bidir classique), ça pourrait passer ?
+
+Hum, peut-être que c'est compliqué d'itérer sur les successeurs des nodes déjà settled (car il faut itérer sur leur successeurs ET prédecesseurs dans G↑ et G↓)
+
+Dans l'exemple donné en illustration en tout cas, à supposer que les arcs soient directionnels (s -> y -> t  ;  s -> x -> t) :
+
+Du point de vue de S :
+- y n'est pas un successeur de s dans le graphe forward (car y a un rank inférieur à s)
+- y n'est pas un prédecesseur de s dans le graphe forward (car l'arc est orienté s->y dans le graphe forward)
+- y **EST** un prédecesseur de s dans le graphe backward (car y a un rank inférieur à s ET l'arc va dans le bon sens dans le graphe backward)
+- y n'est pas un successeur de s dans le graphe backward (car l'arc est orienté y->s dans le graphe backward)
+
+Du point de vue de T :
+- y n'est pas un successeur de t dans le graphe forward (car l'arc est orienté y->t dans le graphe forward)
+- y n'est pas un prédécesseur de t dans le graphe forward (car y a un rank supérieur à t)
+- y **EST** un successeur de t dans le graphe backward (car y a un rank supérieur à t ET l'arc va dans le bon sens dans le graphe backward)
+- y n'est pas un prédécesseur de t dans le graphe backward (car l'arc va dans le mauvais sens dans le graphe backward)
+
+Du coup, j'ai quand même l'impression qu'en itérant sur tous les settled nodes, on pourrait trouver la liste des meeting-nodes en regardant leurs successeurs/prédécesseurs... Mais peut-être est-ce trop compliqué en pratique car il faudrait accéder aux prédécesseurs d'un node, ce qui n'est pas facile ?
+
+De plus, vu que les noeuds settled par une query CH sont en log du nomber de noeuds, on n'a encore moins envie d'aller vers cette complexité.
+
+### Path reconstruction
+
+**TL;DR** : le chemin est calculé sur la CH, il est constitué de shortcuts → pour reconstituer le chemin final, il faut unpacker les shortcuts, i.e. remplacer chaque shortcut par la concaténation de ses deux demi-edges, jusqu'à ce qu'on n'ait plus que des demi-edges originaux (i.e. non-shortcuts) dans le chemin.
+
+Section 3.5.1, figure 22, page 31, illustration assez clair des différentes étapes pour unpacker un chemin contracté.
+
+Unpacking récursif de chaque shortcut (un shortcut est toujours l'agrégat de deux demi-edges, qui peuvent éventuellement être des shortcuts eux aussi).
+
+Mentionne l'AdjacencyArray pour stocker `G↑` et `G↓` (cf. aussi [la doc de RoutingKit](https://github.com/phidra/RoutingKit/blob/a0776b234ac6e86d4255952ef60a6a9bf8d88f02/doc/SupportFunctions.md) qui présente la structure de façon un peu plus détaillée).
+
+Pour pouvoir unpacker un shortcut, il est indispensable de stocker de l'info en plus (car vu que le middle-node est le node de rank le plus petit, aucun des deux demi-edges n'existe dans l'AdjacencyArray stockant `G↑` et `G↓` ; dit autrement, la CH n'a **pas** de base toute l'info nécessaire pour unpacker les shortcuts). Le plus simple est de stocker comme info en plus : le middle-node de chaque shortcut.
+
+
+### Stall-on-demand
+
+**TL;DR** : c'est une technique d'optimisation de la query (spécifique à CH car le *besoin* d'optimisation provient des contraintes de grimper les ranks) permettant de couper des branches de l'arbre d'exporation dijkstra, car on peut savoir à l'avance qu'ils sont sous-optimaux. Les gains ne sont pas négligeables : la section 5.4.7 indique qu'elle permet de diviser par 3 le query-time !
+
+Note = ce qui suit s'applique aux deux sens forward et backward, mais pour ne pas alourdir les notes, je ne parle que de la forward-propagation.
 
 Le principe :
-- À cause de la contrainte propre à CH de grimper les ranks, il se peut que la forward-propagation visite un node sans provenir d'un plus court-chemin.
+- À cause de la contrainte propre à CH de grimper les ranks, il se peut que la forward-propagation visite un node sans provenir d'un plus court-chemin (la thèse a une illustration du problème, qui est très claire une fois qu'on a compris le principe, et je détaille ma propre illustration ci-dessous)
 - (c'est une différence importante entre la propagation dijkstra classique, et la propagation dijkstra CH)
 - OR, si on visite un node en provenance d'un chemin sous-optimal, TOUS les futurs chemins relaxés depuis ce node seront sous-optimaux à leur tour !
-- du coup, il est inutile de poursuivre la relaxation (et la construction d'un shortest-path tree) depuis un node qu'on a rejoint par un chemin sous-optimal : on peut "stall" le node.
+- du coup, il est inutile de poursuivre la relaxation (et la construction d'un shortest-path tree) depuis un node qu'on a rejoint par un chemin sous-optimal
+- le stall-on-demand consiste à interrompre la relaxation depuis un node qu'on sait sous-optimal (on peut "stall" le node)
 
 Une autre façon de voir les choses :
-- l'invariant classiquement maintenu par un dijkstra (bidirectionnel ou non) comme quoi un node settled a rendu définitive sa tentative_distance n'est PLUS VRAI pour une propgation CH
-- en effet, avec CH, on peut settle un node "en provenance" d'un chemin sous-optimal (et le chemin optimal n'est pas emprunté à cause de la contrainte de grimper les ranks), la thèse CH a une illustration graphique assez claire de ça.
-- ça n'empêche pas les CH d'être correctes :-) par contre, à moins de stall le node, ça fait explorer "pour rien" des branches de l'arbre
+- l'invariant habituellement maintenu par un dijkstra "normal" (bidirectionnel ou non) comme quoi la tentative-distance d'un node devient son coût optimal lorsqu'on le *settle* ... **N'EST PLUS VRAIE** pour une forward-propgation CH
+- même rendue définitive car on a settle le node, la tentative-distance d'un node peut être sous-optimale
+- en effet, avec CH, on peut settle un node "en provenance" d'un chemin sous-optimal (le vrai chemin optimal pour rejoindre le node n'est pas emprunté à cause de la contrainte de grimper les ranks), cf. illustration dans la thèse ou ci-dessous
+- ça n'empêche pas les CH d'être correctes et de renvoyer le bon itinéraire :-) par contre, à moins de stall le node, ça fait explorer inutilement des branches de l'arbre
+- le stall-on-demand consiste à détecter, et ne pas explorer inutilement ces branches
+
+**Illustration graphique du problème :**
+
+Pour reprendre l'illustration de la figure 24, le graphe upward `G↑` ci-dessous comporte 3 noeuds `S`, `U` et `X` dont l'ordering est `S < U < X` (ici, `1 < 2 < 3`) :
+
+```
+(1)          5         (3)
+ S─────────────────────►X
+ │                      ▲
+ │          (2)         │
+ └─────────► U ◄────────┘
+     100     │     5 
+             │
+             │         (4)
+           42└────────► K
+```
+
+On suppose qu'on fait une forward-propagation depuis `S` :
+
+- vu l'ordering, depuis `S`, on peut rejoindre `U` ou `X` qui sont tous deux de ranks supérieurs
+- la propagation va commencer par settle `X`, dont la distance prend sa valeur définitive de `5`
+- plus tard, on va settle `U`, dont la distance sera définitive à `100`... alors qu'on peut clairement rejoindre `U` par un chemin plus court `S -> X -> U` de poids `10` au lieu de `100` !
+- dit autrement, en rejoignant `U` depuis `S`, on a emprunté un chemin non-optimal...
+- ...le chemin optimal `S -> X -> U` ne sera jamais emprunté par cette forward-propagation, car au vu de l'ordering `U < X`, l'edge intéressant `XU` (intéressant car de poids faible) ne sera jamais relaxé dans le forward-search
+- et sans le *stall-on-demand*, on aurait continué la forward-propagation depuis `U` sur une base biaisée (en supposant que la distance de `U` est `100`)
+- par exemple, on aurrait settle `K` avec un coût total depuis `S` valant `142`, alors que le vrai coût de `K` depuis `S` n'est que de `52` !
+
+Ce défaut ne change pas la correctness finale de l'algo (qui trouvera le chemin optimal quoi qu'il arrive), mais explorer les successeurs de `U` en considérant que la distance de `U` est `100` ne sert à rien et fait consommer du temps CPU complètement inutile.
+
+**Principe** = le *stall-on-demand* consiste à détecter ces situations (où la forward-propagation a rejoint un node par un chemin non-optimal, mais qu'un chemin plus efficace ne sera jamais relaxé à cause du rank de ses noeuds), et à *stall* (i.e. arrêter) la forward-propagation depuis `U`.
 
 L'implémentation de RoutingKit aide à comprendre comment ça marche en pratique, il y a une fonction `forward_can_stall_at_node` qui renvoie un booléen [lien vers sa définition](https://github.com/phidra/RoutingKit/blob/a0776b234ac6e86d4255952ef60a6a9bf8d88f02/src/contraction_hierarchy.cpp#L1536). Si on peut stall un node, on ne relaxe pas ses edges, [lien à l'appel](https://github.com/phidra/RoutingKit/blob/a0776b234ac6e86d4255952ef60a6a9bf8d88f02/src/contraction_hierarchy.cpp#L1577) :
-- avant de relaxer les edges d'un node lors de la forward-propagation on regarde ses "prédécesseurs de rank supérieur"
-- (et comme on n'y a normalement pas accès à cause de la contrainte de grimper les ranks, on fait ça en regardant plutôt ses successeurs dans le graphe backward)
-- si parmi ces "prédécesseurs de rank supérieur" on en trouve un déjà visité (même pas besoin qu'il soit settled !) avec une forward tentative distance inférieure à celle qu'on s'apprête à utiliser, alors c'est que le node a été visité par la forward-propagation via un chemin sous-optimal, et qu'il est inutile de le relaxer.
-- (en effet, il est inutile de construire un shortest-path tree l'utilisant, puisque ce tree n'aurait justement PAS des shortest-path, à cause de la contrainte de grimper les ranks)
+- lors de la forward-propagation, avant de relaxer les edges d'un node `N`, pour chaque noeud de destination, on regarde ses "prédécesseurs de rank supérieur"
+- (comme on n'y a normalement pas accès sur le graphe forward `G↑` à cause de la contrainte de grimper les ranks, pour réussir ça, on regarde plutôt les successeurs de `N` dans le graphe backward `G↓`)
+- si parmi ces "prédécesseurs de rank supérieur" on en trouve un déjà visité par la **forward**-propagation (même pas besoin qu'il soit settled), qui a une forward tentative distance telle qu'on peut rejoindre `N` avec un coût inférieur à celui qu'on s'apprête à utiliser, alors c'est que `N` a été visité par la forward-propagation via un chemin sous-optimal, et qu'il est inutile de poursuivre la forward-propagation depuis `N`.
+- (en effet, il est inutile de construire un shortest-path tree depuis `N`, puisque ce tree n'aurait justement PAS des shortest-path, à cause de la contrainte de grimper les ranks)
 
-Mentions dans d'autres ressources :
-
-Formulé de la façon suivante dans un autre papier sur TCH :
-
-> During the bidirectional search we perform stall-on-demand [4, 2]: The search stops at nodes when we already found a better route coming from a higher level.
-
-Dans [ce papier](http://algo2.iti.kit.edu/documents/routeplanning/tch_alenex09.pdf), il y a également :
-
-> The stall-on-demand technique identifies such nodes w by checking whether(downward) edges coming into w from more important nodes give shorter paths than the (upward) Dijkstra search.
-
-Enfin, il y a un chapitre très détaillé sur le stall-on-demand à la page 219 de [la thèse TCH](./2014-TDCH-thesis.md).
+Note : attention à ne pas se mélanger les pinceaux : dans notre exemple, on ne s'intéresse qu'à la forward-propagation (le graphe backward n'est qu'un détail d'implémentation permettant de connaître facilement les prédécesseurs d'un node). Notamment, c'est bien si un prédécesseur `P` a déjà été visité par la **forward**-propagation qu'on regarde si `PN` n'est pas un chemin plus optimal vers `N`.
 
 
-## VRAC À RÉORGANISER = Chapitre 6 = Experiments
+**Application à mon illustration ci-dessus** :
+- comme en temps normal, la forward-propagation a relaxé `U` avec un coût depuis `S` à `100`
+- puis, toujours comme en temps normal, on settle également `X` avec un coût depuis `S` à `5`
+- plus tard, arrive le moment de settle `U`, qui a un coût de `100`
+- ce qui change : avant de relaxer les out-edges de `U`, on regarde **dans le graphe backward** les successeurs de `U` : on trouve `X`.
+- `X` a déjà été visité par la **forward**-propagation, et a un coût définitif depuis `S` de `5`. De plus, l'edge `XU` a un coût de `5` également, ce qui fait que depuis `S`, on peut rejoindre `U` (via `X`) avec un coût total de `10`.
+- comme `10 < 100`, c'est donc que le chemin direct `SU` par lequel la forward-propagation a pu rejoindre `U` n'était pas optimal -> il est inutile de continuer la propagation depuis `U`.
+- on peut donc settle un autre node (non-illustré sur le schéma), et la forward-propagation ne settlera jamais `K` ! C'est via la backward-propagation que `K` sera settled à sa vraie valeur.
 
-Éléments de l'heuristique d'ordering :
-- E = edge difference
-- D = deleted neighbours
-- S = search space size (appelé "cost of contraction" plus tôt)
-- W = relative betweenness (appelé "global measures" plus tôt)
-- V = sqrt(voronoi region size)
-- L = limit search space on weight calculation (??)
-- Q = upper bound on edges in search path (appelé "cost of queries" plus tôt)
+À noter qu'il y a un chapitre très détaillé sur le *stall-on-demand* à la page 219 de [la thèse TCH](./2014-TDCH-thesis.md).
 
-L'average degree explose si on est trop drastique sur les hop-limits
-- NdM : mon interprétation = car on rajoute des raccourcis "inutiles" -> on a plus d'edges au final
-- NdM : du coup, ça semble confirmer que le nombre d'edges est bien une mesure importante pour quantifier la qualité d'un node ordering
+*Note* = à ne pas confondre avec *stall-in-advance* = une autre technique provenant de Highway Node Routing pour limiter les local-searches (qui semble équivalente à la hop-limit).
 
-La hop-limit est dynamique au cours de l'ordering : en fonction du degré moyen, on augmente le nombre de hops.
-
-B/node = byte / node = space-size (taille du graph dump)
-
-NdM = pour un nombre de nodes donné, la taille du graphe quantifie aussi la qualité de l'ordering.
+*Note* : la représentation graphique où les nodes apparaissent plus ou moins haut dans la figure en fonction de leur rank est intéressante : elle permet d'éviter d'alourdir l'illustration en annotant le rank de chaque node, je la garde sous le coude pour communiquer sur l'ordering par la suite.
 
 
-## VRAC À RÉORGANISER = Notes sur les notations utilisées
+## Chapitre 4 = Applications
 
-### Distance vs cost
+Une section assez courte sur les applications :
 
-- d(u,w) = distance(u,w) = coût du plus court chemin de u à w. (u,w) n'est pas forcément un edge
-- c(u,w) = cost(u,w) = poids de l'edge (u,w). (u,w) est forcément un edge.
-- Même si (u,w) est un edge, on n'a PAS FORCÉMENT d(u,w) == c(u,w) :
-    + sur le graphe original G, il existe peut-être un AUTRE chemin que l'edge (u,w) permettant d'aller de u à w, de façon plus courte
-    + sur l'overlay graph G′, si (u,w) est un raccourci, il existe peut-être un autre chemin que le raccourci pour aller de u à w, de façon plus courte (ceci est possible si on arrêté la recherche de witness trop tôt, et qu'on a donc ajouté le raccourci à tort)
+- **4.1 Many-to-Many Routing** : application la plus intéressante à mes yeux (et utilisée par l'algorithme ULTRA), je détaille un chouïa plus bas.
+- **4.2 Transit-Node Routing** : utiliser l'ordering pour choisir les access-nodes de TNR
+- **4.3 Changing all Edge Weights** : moins intéressant que CCH
+- **4.4 Implementation on Mobile Devices** : application intéressante des CH, qui sont efficaces et peu gourmandes en RAM
+- **4.5 Reuse of Shortcuts in other Applications** : quelques mots seulement.
 
-Exemple de cas où l'edge direct `AB` n'est pas le plus court chemin entre `A` et `B` : le PCC est plutôt par `A → X → B` :
+### Application aux queries many-to-many = bucket-CH
 
-```
-    1.----X-----.1
-    /            \
----A              B----
-    \     3      /
-     ------------
-```
+**Objectif** = calculer tous les shortest-paths entre toutes les sources `s` d'un ensemble `S` et toutes les targets `t` d'un ensemble `T`.
+
+- implémentation naïve = faire `|S| x |T|` queries. Simple, mais impraticable pour de grandes valeurs de `|S|` et `|T|`
+- utilisation des CH = à la place, on peut faire `|T|` backward-searches + `|S|` forward-searches, soit `|S| + |T|` searches en tout (chaque search étant de plus assez rapide, car faite sur une CH).
+
+**Step 1** = on fait `|T|` backward-propagations :
+
+- pour chaque `t ∈ T`, on fait une backward-propagation complète (i.e. sans critère d'arrêt : ce n'est que lorsqu'on a épuisé les noeuds à settle qu'on s'arrête)
+- on associe à chaque node `n` du graphe un bucket `Bn` contenant `|T|` valeurs
+- lorsqu'une backward-propagation reach un node `n`, on sette dans `Bn[t]` le cost avec lequel la propagation a atteint `n` (et on aura `Bn[t] = +∞` si `n` n'a pas été reached par la backward-propagation depuis `t`)
+- au final, *chacune* des backward-propagations sette une valeur aux noeuds qu'elle atteint (inutile de les settle : simplement les atteindre est suffisant)
+
+**Step 2** = on fait `|S|` forward-propagations :
+
+- derrière, pour chaque `s ∈ S`, on fait une forward-propagation
+- lorsque la forward-propagation partant de `s` atteint un node `n` déjà atteint par la backward-propagation depuis `t` (i.e. on a `Bn[t] ≠ ∞`), tout se passe comme si `n` était un meeting-node pour ce couple `{s,t}` : on a alors un plus-court-chemin candidat.
+- comme on a fait une backward-propagation pour chaque `t ∈ T`, et une forward-propgation pour chaque `s ∈ S`, pour chaque couple `{s, t}`, on peut trouver le plus court chemin optimal parmi les candidats.
+
+Note = on arrête les propagations quand ?
+
+- Avec ma compréhension, on n'arrête *jamais* les backward-propagation, qui doivent reach tous les noeuds possibles (mais comme c'est une propagation CH, elles ne devraient pas être très coûteuses)
+- Du côté des forward-propagations, en théorie, on pourrait s'arrêter si le critère d'arrêt du bidir dijkstra des CH est rempli pour tous les noeuds `s ∈ S` (i.e. pour tous les `s ∈ S`, les noeuds non-encore settled ont un coût plus important qu'un plus court chemin candidat)
+- En pratique, vu le caractère sparse des propagations CH, c'est plus simple, et sans doute pas énormément plus lent de propager complètement les forward-propagation...
+
+Note bis = pourquoi est-il nécessaire de faire *plusieurs* forward-searches ?
+
+- Avec une compréhension naïve, on pourrait penser qu'il suffit de se contenter de regarder les buckets des voisins immédiats de `s`(voire de regarder juste le bucket de `s` lui-même `Bs`).
+- En effet, si tous les voisins `v` de `s` ont une valeur `Bv[t]` pour tous les `t`, alors il suffit de sommer les cost `cost(v) + Bv[t]` et d'en prendre le min pour trouver le plus court chemin ?
+- Non ! Car pour une backward-propagation donnée, tous les noeuds du graphe ne sont pas reached, loin de là (c'est justement l'intérêt des CH de ne pas devoir relaxer tous les noeuds)
+- Du coup, parmi les voisins `v` de `s`, il y en a sans doute qui ont `Bv[t] = +∞` : il faut continuer la propagation plus profondément pour trouver un node `n` atteint par la backward-propagation depuis `t` (dont `Bn[t] ≠ +∞`)
+- Plus généralement, il faudra avancer chaque forward-propagation pour réussir à tomber sur des noeuds atteints par toutes les backward-propagations (jusqu'à trouver des meeting-nodes, en fait, et ce pour *chaque* `t∈T`)
+- Par exemple, il est tout à fait possible qu'aucun voisin de `S` n'ait été atteint par aucune des backward-propagation (dit autrement : on peut très bien avoir `Bv[t] = ∞` pour chaque voisin `v`)
+
+Note ter : du coup, dans les backward-propagation, on peut ignorer les stalled-nodes, et faire comme si ils n'avaient pas été reached (vu qu'ils ne participeront pas aux plus courts chemins).
+
+**Optimisation** : la thèse mentionne une optimisation consistant à prune le backward-search pour avoir un bucket plus petit, elle semble décrite plus en détail sur le papier de 2007 dont est issue l'algo many-to-many = *Computing many-to-many shortest paths using highway hierarchies* ([lien](https://dl.acm.org/doi/10.5555/2791188.2791192), [PDF](https://dl.acm.org/doi/pdf/10.5555/2791188.2791192)).
+
+
+## Chapitre 5 = Experiments
+
+Il parle un peu de l'implémentation (mais comme on n'a pas accès au code-source, ça n'a que peu d'intérêt ; en particulier, l'appendix B est quasi-inutile vu qu'elle donne des schémas UML sur un code que je n'ai pas). Info utile toutefois : son implémentation des CH fait 7700 lignes de code, et il compare les résultats à un dijkstra classique pour s'assurer de la correction des algos.
+
+Il utilise 3 datasets :
+
+- Europe = 18M nodes, 42M edges
+- USA = 23M nodes, 58M edges (librement accessible)
+- New-Europe = 34M nodes, 75M edges
+
+À noter qu'ils n'avaient pas accès au travel-time des edges, et qu'ils l'ont donc estimé en fonction de la catégorie de la route. De plus, ils se sont limités à la plus grande composante fortement connexe.
+
+L'occupation mémoire (ou plus exactement l'overhead-mémoire par rapport à un dijkstra unidirectionnel) est mesuré en bytes-per-node.
+
+### setup d'évaluation (5.3 Methodology)
+
+Il y a 3 setups permettant d'évaluer comment les CH se comportent :
+
+**setup de base** : le setup de base pour évaluer la performance des CH est :
+
+- 100.000 OD (Origin-Destination) choisies uniformément au hasard, et 3 critères :
+- Average query-time
+- Average search-space size
+- Average relaxed edges
+
+**setup par dijkstra-rank** : setup différent, et plus intéressant car tenant compte de la difficulté d'une query :
+
+- on prend 1000 sources `s` random, et on fait une propagation Dijkstra (classique, pas CH) partant de `s`
+- on retient le noeud settled au rang `r` pour toutes les différentes puissances de 2 : `r = 2^k`
+- chacun de ces noeuds settled `t` fournit une requête `{s,t}`, de plus en plus difficile
+- exemple 1 = pour une source `s`, le noeud `t₃` settled au rang `2³ = 8` fournit une requête `{s,t₃}` très facile (vu que le chemin est tout petit, il sera hyper-rapide à calculer même pour un dijkstra classique, car il ne nécessite de settle que `8` noeuds)
+- exemple 2 = pour la même source `s`, le noeud `t₁₂` settled au rang `2²¹ = 2097152` fournit une requête `{s,t₂₁}` très difficile (vu que le chemin est très long : avec un dijkstra classique, il nécessite de settle plus de 2 millions de nodes)
+- cette façon de faire permet d'évaluer la performance des algos en fonction de la difficulté des requêtes
+
+**setup par worst-case-upper-bound** : le principe est de raisonner sur le pire cas possible, en calculant une upper-bound de la taille du search-space (taille totale = taille forward + taille backward) pour toute s-t-pair. Pour cela :
+
+- sur un graphe `G`, on fait une forward (resp. backward) search complète (i.e. sans abort criterion : on ne s'arrête que quand la queue est vide) depuis chacun des nodes
+- on obtient une distribution des tailles des forward-search-space (resp. backward) sur le graphe `G`
+- on peut donc attribuer à chaque node une upper-bound sur un forward-search-space depuis ce node (et de même, on peut attribuer à chaque node une upper-bound sur un backward-search-space depuis ce node)
+- ce qu'il faut retenir : on peut calculer pour s-t-pair une upper-bound du search-space total (i.e. de la somme du forward-search-space et du backward-search-space), en n'ayant fait que `2*N` propagations, au lieu d'avoir dû en faire `N²`
+
+Ça permet de mesurer la performance des CH dans le pire cas (et même de deux variantes des CH, en fonction des critères d'ordering) et de comparer ça avec HNR.
+
+### recherche des paramètres optimaux
+
+Les CH ont plusieurs paramètres répartis dans deux catégories :
+- coefficients des termes du node ordering
+- les limites qu'on impose au local-search
+
+Ils ont donc cherché les paramètres donnant les meilleurs résultats. Pour cela, ils ont essayé de faire varier les différents paramètres, avec comme objectif de minimiser une fonction, qui existe en deux variantes :
+- Agressive variant = minimiser le Query-Time uniquement
+- Economical variant = minimiser le produit Query-Time x Preprocessing-Time
+
+Je ne rentre pas dans les détails dans les présentes notes, mais la thèse précise comment ils ont recherché les meilleurs paramètres. Le point intéressant = plus le graphe est gros, plus l'importance relative de l'edge-difference dans les coefficients de l'ordering doit être grosse elle-aussi.
+
+### résultats
+
+Au niveau des résultats non-plus, je ne rentre pas dans les détails.
+
+Voici un chiffre pour fixer les idées : l'upper-bound de la taille des search-space est de l'ordre de quelques centaines de noeuds (800 pour la variante aggressive, 1300 pour la variante économique) pour le graphe Europe, qui comporte pourtant plusieurs dizaines de millions de noeuds !
+
+Note : lorsqu'on doit expand les shortcuts (i.e. si on est intéressé par le plus court-chemin, et non uniquement par sa durée), on consomme plus de mémoire pour stocker le middle-node, et de temps de query pour expand les shortcuts. Concernant la façon dont on stocke le middle-node : il y a compromis à faire entre la taille supplémentaire sur disque (pour le stockage du middle-node) et un léger overhead au preprocess et au query-time.
+
+Une courte section 5.4.6 évoque une customiszation des poids des edges (CCH avant l'heure), permettant d'échanger la métrique travel-time opur la métrique distance, mais les CH ne marchent pas très bien pour ça, vu que l'ordering est trop sensible au changement de métrique. De toutes façons, CCH est un framework plus adapté dans ce cas.
+
+Une autre courte section 5.4.7 montre que le stall-on-demand améliore énormément le temps des queries puisqu'il permet de diviser le temps de query par un facteur entre 2 et 3 !
+
+Il y a une section 5.5 dédiée aux résultats many-to-many. Un point qui semble jouer sur les résultats = le core-size (j'ai pas regardé de très près, c'est pas clair s'il s'agit de la même définition de core que celle utilisée par ULTRA = les noeuds de haut ranks qu'on choisit de ne pas contracter).
+
+Il y a une courte section 5.6 dédiée à l'utilisation des CH pour trouver les transit-nodes de TNR (Transit Node Routing).
+
+In fine, aussi bien pour les requêtes many-to-many que pour TNR, CH est la meilleure base à date.
+
+## Appendix A = Implementation et B = Code Documentation
+
+Dans l'appendix A, il y a une présentation intéressante de l'adjacency-array.
+
+Notamment, ils donnent une façon d'appréhender la structure que j'apprécie : "dans un adjacency-array, on regroupe les edges par source-node".
+
+L'appendix B documente un code auquel je n'ai pas accès, elle est quasi-inutile pour moi.
