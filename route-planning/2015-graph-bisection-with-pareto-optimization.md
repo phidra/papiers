@@ -1,6 +1,6 @@
 # (ARTICLE) Graph Bisection with Pareto-Optimization
 
-- **url** = [PDF](https://arxiv.org/pdf/1504.03812.pdf) (md5sum=`42910cd624a1b0fff3b749310029a6cd`), [copie locale](./LOCALCOPIES/1504.03812.pdf)
+- **url** = [abstract](https://arxiv.org/abs/1504.03812), [PDF](https://arxiv.org/pdf/1504.03812.pdf) (md5sum=`42910cd624a1b0fff3b749310029a6cd`), [copie locale](./LOCALCOPIES/1504.03812.pdf)
 - **source** = conf: [ALENEX 2016](https://epubs.siam.org/doi/book/10.1137/1.9781611974317)
 - **auteurs** = Michael HAMANN (Karlsruhe Institute of Technology), Ben STRASSER (Bosch)
 - **date de publication** = 2015
