@@ -22,7 +22,7 @@
     - graph cut (la frontière est un set d'edges)
     - node separator (la frontière est un set de nodes)
 * Flow cutter (2016) = algo utilisé pour trouver un ordering
-* Preprocessing nécessite de  calculer un node separator à peu près équilibré, mais pour CH, ce critère d'équilibrage est MOINS important que le crtière visant à minimiser la taille du cut.
+* Preprocessing nécessite de  calculer un node separator à peu près équilibré, mais pour une application aux CH, ce critère d'équilibrage est MOINS important que le critère visant à minimiser la taille du cut.
 * Un papier qui semble intéressant : [graph partitioning with natural cuts](https://www.microsoft.com/en-us/research/wp-content/uploads/2010/12/punchTR.pdf) en 2010
 * Bisection = partition en deux groupes.
 * Il existe beaucoup de problèmes liés au partitioning de graphes :
