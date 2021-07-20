@@ -13,7 +13,7 @@ Notes à prendre, notamment sur l'article (les notes vrac ci-dessous ont été p
 ## Notes vrac
 
 Note sur article vs. thèse vs. ... :
-- le code RE fait explicitement référence à la thèse (d'où le fait que la technique soit appelée WCH au lieu de CCH).
+- le code fait explicitement référence à la thèse (d'où le fait que la technique soit appelée WCH au lieu de CCH).
 - tous les travaux scientifiques postérieurs semblent citer l'article ([exemple1 en 2017](https://arxiv.org/pdf/1504.03812.pdf), [exemple2 en 2019](https://arxiv.org/pdf/1906.11811.pdf), ...)
 - je ne l'ai pas lu pour confirmer, mais j'ai vu passer (notamment dans [cet article](https://ad-publications.cs.uni-freiburg.de/GIS_personal_FS_2015.pdf), qui donne une bonne synthèse de CCH et CRP) que [CRP](https://www.microsoft.com/en-us/research/wp-content/uploads/2011/05/crp-sea.pdf) est un concurrent de CCH (permettant également la customization).
 
