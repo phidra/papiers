@@ -64,7 +64,7 @@
 * En revanche, metis est très, très, très rapide.
 * Page 23, ils mentionnent un bug empêchant métis de trouver le Mississippi
 * L'ordre de contraction des nodes pour WCH semble être la conjonction 1. d'un partitioner (e.g. metis) et 2. d'une nested-dissection strategy qui applique récursivement le partitioner, et fournit l'ordering.
-* Au passage, le nd de ndmetis est sans doute là pour nested dissection (à vérifier), donc on retrouve cette conjonction dans le nom de l'exécutable
+* Au passage, le `nd` de ndmetis est sans doute là pour nested dissection (à vérifier), donc on retrouve cette conjonction dans le nom de l'exécutable
 * Papier : search Space Size in contraction hierarchies
 * Référence vers un papier qui utilise ch pour faire du calcul d'iti multimodal = user-constrained multimodal route planning
 * Sur le papier lui-même : de précédents travaux ont montré que sous réserve d'une contrainte sur la highway dimension du graphe soit vraie (conjecturée vraie pour les road networks), alors les ch ont un gain prouvé. Le présent papier prouve des résultats en n'utilisant que la topologie du graphe, et pas sa métrique.
