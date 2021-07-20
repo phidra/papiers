@@ -13,7 +13,7 @@
 * This makes it well-suited for separating large graphs with small cuts, such as road graphs, which is the primary application motivating our research.
 * FlowCutter outperforms the current state-of-the-art both interms of cut sizes and CCH performance
 * le code est en accès libre sur [le repo github](https://github.com/kit-algo/flow-cutter) du KIT
-* à noter que l'algo a depuis été accéléré en donnant naissance à [InertialFlowCutter](https://arxiv.org/pdf/1906.11811.pdf), qui semble spécifiquement adapté à CCH (combinaison de FlowCutter et de [IntertialFlow](https://link.springer.com/chapter/10.1007/978-3-319-20086-6_22))
+* à noter que l'algo a depuis été accéléré en donnant naissance à [InertialFlowCutter](https://arxiv.org/pdf/1906.11811.pdf), qui semble spécifiquement adapté à CCH (combinaison de FlowCutter et de [InertialFlow](https://link.springer.com/chapter/10.1007/978-3-319-20086-6_22))
 * de plus, [d'autres algos plus récents](https://drops.dagstuhl.de/opus/volltexte/2019/11173/) existent et semble encore mieux
 
 # Transfert de mes notes brutes
