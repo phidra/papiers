@@ -10,7 +10,7 @@
 
 * le TL;DR reste à faire
 
-# Transfert de mes notes brutes
+## Transfert de mes notes brutes
 
 section 3.1 : parmi tous les transfers trip-à-trip possibles, seuls quelques uns contribuent aux plus courts chemins
 
@@ -56,3 +56,55 @@ objectif du preprocess : identifier ces transfers trip-à-trip qui sont utiles
 * ces transfers ne sont jamais utiles, sauf dans le edge-case où il est plus rapide de faire le transfer que de marcher
 * dit autrement : marcher pour rejoindre le target-trip + utiliser le target-trip permet de rejoindre un stop du source-trip plus rapidement qu'en restant dans le source-trip, au point qu'on louperait un trip ultérieur à cause de cette lenteur (et qu'il est donc indispensable de conserver le U-turn transfer pour ne pas louper le trip ultérieur)
 * ça peut arriver si le temps de marche à pied depuis le stop antérieur du source-trip est très très grand (et que le transfer+target-trip sont plus rapides)
+
+### cas 2 = transfer reduction
+
+FIXME : je ne poursuis pas plus l'analyse de la réduction, j'en reste au fait que le résultat du preprocessing est un set des transferts utiles entre le i-ième stop d'un trip `t` et le j-ième stop d'un trip `u`.
+
+## Earliest Arrival Query
+
+INPUT = heure de départ, stop de départ, stop d'arrivée
+
+DONNÉES PRÉPROCESSÉES = un set des transferts utiles entre le i-ième stop d'un trip `t` et le j-ième stop d'un trip `u`.
+
+OUTPUT = un front de Pareto optimisant l'heure d'arrivée et le nombre de trajets TC (pour chaque nombre de transfert, on veut l'heure d'arrivée la plus tôt).
+
+**FIXME = notes vrac en cours d'analyse du papier**
+
+> During the algorithm, we remember which parts of each trip `t` have already been processed by maintaining the index `R(t)` of the first reached stop, initialized to `R(t) ← ∞` for all trips.
+
+Pas encore clair ce qu'est cet index...
+
+D'après la définition, pour chaque trip `t`, on mémorise l'index du premier stop du trip atteint (initialisé à `∞` = on n'atteint aucun stop du trip).
+
+> We also use a number of queues `Qn` of trip segments reached after `n` transfers 
+
+Idem, pas encore clair...
+
+> We also use [...] a set `L` of tuples `(L, i, ∆τ)`
+
+Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop final ou n'importe quel stop ?
+
+D'après la formule qui suit, on dirait qu'on retient toutes les lignes passant par le stop `p`, ainsi que toutes les lignes passant par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p` depuis `q`.
+
+Le `Δτ` dans la formule semble représenter le temps nécessaire depuis le i-ième stop de la ligne `L` pour rejoindre le stop `p` (il est égal à 0 si `p` est un stop de `L`, et égal au temps de marche à pied entre `q` et `p` sinon).
+
+En résumé, ce set `L` indique les différentes façons possibles de rejoindre le stop `p`.
+
+----
+
+> We start by identifying the trips travelers can reach from `psrc` at time `τ`
+
+Plutôt straightforward : on regarde les TRIPS (tout l'algo semble basé sur les trips) accessible depuis le stop de départ à l'heure de départ, en incluant ceux qu'on peut attraper via un footpath.
+
+Pour cela, on itère sur les lignes qui passent par {le stop ou l'un de ceux accessibles via un footpath}, collectivement désignés par `q` dans l'article.
+
+Pour chaque ligne passant par l'un de ces stops `q`, on garde le **premier** trip (i.e. le trip le plus tôt de la ligne).
+
+Bien sûr, on ne s'intéresse qu'à ceux qu'on peut réellement attraper, i.e. ceux qui partent après `τ` (ou après `τ + temps de marche à pieds` si `q` est un stop accessible par un footpath).
+
+NdM : du coup, ça nécessite d'être capable d'itérer efficacement sur les lignes accessibles depuis un stop donné à un temps donné.
+
+NdM : ça nécessite également d'être capable de retrouver efficacement les différents trips d'une ligne en fonction de l'heure de passage.
+
+À ce stade, on a le premier trip de chaque ligne passant par un stop `q`, i.e. on sait quels trips on peut attrapper depuis le stop `q` en partant à `τ`.
