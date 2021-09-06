@@ -22,7 +22,7 @@
     - RAPTOR est le premier algo efficace, et il y a eu d'autres inventions depuis
     - [CSA](https://arxiv.org/pdf/1703.05997.pdf) inventé en 2013 = caractéristiques assez similaires à RAPTOR, possiblement un peu plus rapide, mais pas clair sur la capacité à renvoyer un pareto-set optimisant également le nombre de transferts
     - [Transfer Patterns](https://ad-publications.cs.uni-freiburg.de/ESA_transferpatterns_BCEGHRV_2010.pdf), inventé en 2010, utilisé par google -> le plus rapide (scale même à l'échelle nationale), mais nécessite un lourd préprocessing.
-    - [Trip-Based Public Transit Routing](https://arxiv.org/abs/1504.07149), inventé en 2015, je ne l'ai pas étudié, semble intermédiaire entre RAPTOR/CSA et TransferPatterns.
+    - [Trip-Based Public Transit Routing](./2015-trip-based-public-transit-routing.md), inventé en 2015, plus rapide que RAPTOR, mais en n'ayant que très peu de preprocessing, donc intermédiaire entre RAPTOR/CSA et TransferPatterns.
     - diverses labeling techniques ([exemple1](https://dl.acm.org/doi/10.1145/2723372.2749456), [exemple2](https://link.springer.com/chapter/10.1007%2F978-3-319-20086-6_21), ...)
 * Utilisé entre autre par [le moteur navitia](https://github.com/CanalTP/navitia).
 * Rapide description avec les mains :
