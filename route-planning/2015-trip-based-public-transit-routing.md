@@ -63,7 +63,7 @@ FIXME : je ne poursuis pas plus l'analyse de la réduction, j'en reste au fait q
 
 ## Earliest Arrival Query
 
-INPUT = heure de départ, stop de départ, stop d'arrivée
+INPUT = heure de départ `τ`, stop de départ `p_src`, stop d'arrivée `p_dst`
 
 DONNÉES PRÉPROCESSÉES = un set des transferts utiles entre le i-ième stop d'un trip `t` et le j-ième stop d'un trip `u`.
 
