@@ -112,3 +112,20 @@ NdM : ça nécessite également d'être capable de retrouver efficacement les di
 
 **STEP 1** = à ce stade, on a le premier trip de chaque ligne passant par `p_src` (au sens large : ça inclut les stops `q` joignables à pied), i.e. on sait quels trips on peut attraper depuis le stop `p_src` en partant à `τ`.
 
+> For each of those trips, if i < R(t), we add the trip segment pi → pR(t) to queue Q₀
+
+VRAC : R(t) semble donc servir à retenir le premier stop permettant d'attraper un trip.
+
+VRAC : un trip segment est un "morceau" de trip = une suite de stops d'un trip donné (et pour rappel : comme on parle de TRIP, on parle bien d'un TC à un datetime fixé !)
+
+VRAC : Les différents `Qn` stockent les trips segments accessibles après `n` transferts. Du coup, ici, on ajoute chaque trip-segment à `Q₀` (vu qu'on n'a pas encore fait de transfert).
+
+> and then update R(u) ← min(R(u), i) where t ≤ u  ∧  Lt = Lu
+
+VRAC : C'est quoi déjà la relation de domination pour les trips ? En gros, `t ≤ u` veut dire que `t` et `u` sont deux trips d'une même ligne, et que `t` part avant.
+
+En gros, pour chaque trip empruntable depuis `p_src`, on met également à jour les index des trips de la même ligne, qui partent après. C'est confirmé textuellement juste derrière :
+
+> meaning we update the first reached stop for t and all later trips of the same line. [...] None of these later trips u can improve upon t. By marking them as reached, we eliminate them from the search and avoid redundant work.
+
+Le point important, c'est que ces trips futurs "ne nous intéressent pas" (car ils sont dominés par `t`, donc moins intéressants que lui pour notre problème), donc à partir de maintenant, on les ignore.
