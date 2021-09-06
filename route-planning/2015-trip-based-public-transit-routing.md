@@ -93,7 +93,7 @@ En résumé, ce set `L` indique les différentes façons possibles de rejoindre 
 
 ----
 
-> We start by identifying the trips travelers can reach from `psrc` at time `τ`
+> We start by identifying the trips travelers can reach from `p_src` at time `τ`
 
 Plutôt straightforward : on regarde les TRIPS (tout l'algo semble basé sur les trips) accessible depuis le stop de départ à l'heure de départ, en incluant ceux qu'on peut attraper via un footpath.
 
