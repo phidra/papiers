@@ -63,7 +63,7 @@ FIXME : je ne poursuis pas plus l'analyse de la réduction, j'en reste au fait q
 
 ## Earliest Arrival Query
 
-INPUT = heure de départ `τ`, stop de départ `p_src`, stop d'arrivée `p_dst`
+INPUT = heure de départ `τ`, stop source `p_src`, stop target `p_tgt`
 
 DONNÉES PRÉPROCESSÉES = un set des transferts utiles entre le i-ième stop d'un trip `t` et le j-ième stop d'un trip `u`.
 
@@ -81,11 +81,14 @@ D'après la définition, il existe un index `R` pour chaque trip `t`. Pour un tr
 
 Idem, pas encore clair...
 
-> We also use [...] a set `L` of tuples `(L, i, ∆τ)`
+> We also use [...] a set `L` of tuples `(L, i, ∆τ)` [...] The latter indicates lines reaching the target stop ptgt
 
-Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop cible `p_dst` ? Ou bien n'importe quel stop ?
+Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop cible `p_tgt` ? Ou bien n'importe quel stop ? L'article parle bien de `p_tgt`.
 
-D'après la formule qui suit, on dirait qu'on retient toutes les lignes passant par le stop `p`, ainsi que toutes les lignes passant par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p` depuis `q`.
+D'après la formule qui suit, on dirait qu'on retient :
+
+- toutes les lignes passant par le stop `p_tgt`
+- ainsi que toutes les lignes passant par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p_tgt` depuis `q`.
 
 Le `Δτ` dans la formule semble représenter le temps nécessaire depuis le i-ième stop de la ligne `L` pour rejoindre le stop `p` (il est égal à 0 si `p` est un stop de `L`, et égal au temps de marche à pied entre `q` et `p` sinon).
 
@@ -95,7 +98,7 @@ En résumé, ce set `L` indique les différentes façons possibles de rejoindre 
 
 > We start by identifying the trips travelers can reach from `p_src` at time `τ`
 
-Plutôt straightforward : on regarde les TRIPS (tout l'algo semble basé sur les trips) accessible depuis le stop de départ à l'heure de départ, en incluant ceux qu'on peut attraper via un footpath.
+Plutôt straightforward : on regarde les TRIPS (d'une façon générale, tout l'algo semble basé sur les trips) accessible depuis le stop source à l'heure de départ, en incluant ceux qu'on peut attraper via un footpath.
 
 Pour cela, on itère sur les lignes qui passent par {le stop ou l'un de ceux accessibles via un footpath}, collectivement désignés par `q` dans l'article.
 
@@ -107,4 +110,5 @@ NdM : du coup, ça nécessite d'être capable d'itérer efficacement sur les lig
 
 NdM : ça nécessite également d'être capable de retrouver efficacement les différents trips d'une ligne en fonction de l'heure de passage.
 
-À ce stade, on a le premier trip de chaque ligne passant par un stop `q`, i.e. on sait quels trips on peut attraper depuis le stop `q` en partant à `τ`.
+**STEP 1** = à ce stade, on a le premier trip de chaque ligne passant par `p_src` (au sens large : ça inclut les stops `q` joignables à pied), i.e. on sait quels trips on peut attraper depuis le stop `p_src` en partant à `τ`.
+
