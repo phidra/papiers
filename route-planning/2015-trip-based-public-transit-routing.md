@@ -75,7 +75,7 @@ OUTPUT = un front de Pareto optimisant l'heure d'arrivée et le nombre de trajet
 
 Pas encore clair ce qu'est cet index...
 
-D'après la définition, pour chaque trip `t`, on mémorise l'index du premier stop du trip atteint (initialisé à `∞` = on n'atteint aucun stop du trip).
+D'après la définition, il existe un index `R` pour chaque trip `t`. Pour un trip donné, l'index stocke un stop (ou plus exactement son index) = l'index du premier stop du trip atteint (initialisé à `∞` = on n'atteint aucun stop du trip).
 
 > We also use a number of queues `Qn` of trip segments reached after `n` transfers 
 
@@ -83,7 +83,7 @@ Idem, pas encore clair...
 
 > We also use [...] a set `L` of tuples `(L, i, ∆τ)`
 
-Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop final ou n'importe quel stop ?
+Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop cible `p_dst` ? Ou bien n'importe quel stop ?
 
 D'après la formule qui suit, on dirait qu'on retient toutes les lignes passant par le stop `p`, ainsi que toutes les lignes passant par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p` depuis `q`.
 
@@ -107,4 +107,4 @@ NdM : du coup, ça nécessite d'être capable d'itérer efficacement sur les lig
 
 NdM : ça nécessite également d'être capable de retrouver efficacement les différents trips d'une ligne en fonction de l'heure de passage.
 
-À ce stade, on a le premier trip de chaque ligne passant par un stop `q`, i.e. on sait quels trips on peut attrapper depuis le stop `q` en partant à `τ`.
+À ce stade, on a le premier trip de chaque ligne passant par un stop `q`, i.e. on sait quels trips on peut attraper depuis le stop `q` en partant à `τ`.
