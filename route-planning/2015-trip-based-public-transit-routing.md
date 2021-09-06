@@ -156,3 +156,15 @@ Du coup, le principe est de traiter tous les trips après, 0, 1, ... transferts.
 
 Comme on traite les nombres de transferts croissants, à chaque étape, on traite des trips avec PLUS de transferts que ceux traités jusqu'ici -> si à une étape N on ajoute un trip au Pareto-set (donc un trip non-dominé), c'est donc qu'il a permis d'arriver plus tôt que les étapes précédentes utilisant moins de transferts. Dit autrement : on trouve le trajet permettant d'arriver le plus tôt à la destination *en dernier*. Ceux avec moins de transferts qui ont été trouvés avant sont forcément plus longs (sans quoi on n'aura pas poursuivi le traitement, vu que tous les trajets futurs auraient été dominés en terme de nombre de transferts).
 
+NdM : si je résume avec mes mots, ça ressemble beaucoup à RAPTOR :
+
+- préliminaire = le preprocessing permet de connaître les transferts utiles entre les trips
+- sur le principe, on itère sur les trips (en se limitant au premier trip de chaque ligne)
+- on regarde où on peut aller avec 0 transferts (i.e. depuis le stop de départ `p_src`) avec les trips accessibles depuis le stop de départ
+- puis, en utilisant les transferts preprocessés, on regarde où on peut aller avec les trips accessibles depuis `p_src + 1 transfert`
+- puis, on regarde où on peut aller avec les trips accessibles depuis `(p_src + 1 transfert) + 1 transfert`
+- etc.
+- ce qui permet de savoir si un trip est intéressant ou non est l'index `R(t)` : si on a pu le rejoindre plus tôt, c'est qu'il a déjà été traité
+
+
+NOTE : pour reconstruire le chemin final, on peut faire comme pour dijkstra, et mémoriser pour chaque trip-segment le "trip-parent" permettant de le rejoindre. Derrière, on reconstruit le chemin complet à l'envers, en partant du trip-segment permettant de rejoindre l'arrivée.
