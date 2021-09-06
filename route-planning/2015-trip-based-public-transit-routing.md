@@ -94,6 +94,11 @@ Le `Δτ` dans la formule semble représenter le temps nécessaire depuis le i-i
 
 En résumé, ce set `L` indique les différentes façons possibles de rejoindre le stop `p`.
 
+EDIT : ma vision des choses = pour faire le parallèle avec RAPTOR, en fait, ce `L` fait un peu office de "point d'arrivée" de l'algo :
+
+- comme RAPTOR s'intéresse aux **stops** (la donnée qu'on met à jour à chaque itération de l'algo sont les stops qu'on peut rejoindre, et l'heure à laquelle on les rejoint), le "point d'arrivée" de l'algo est le stop d'arrivée
+- comme Trip-Based s'intéresse aux **trips** (la donnée qu'on met à jour à chaque itération de l'algo sont les trips qu'on peut attraper, et l'heure à laquelle on les attrape), le "point d'arrivée" de l'algo est le set de trips permettant de rejoindre le stop d'arrivée = `L`
+
 ----
 
 > We start by identifying the trips travelers can reach from `p_src` at time `τ`
@@ -166,5 +171,8 @@ NdM : si je résume avec mes mots, ça ressemble beaucoup à RAPTOR :
 - etc.
 - ce qui permet de savoir si un trip est intéressant ou non est l'index `R(t)` : si on a pu le rejoindre plus tôt, c'est qu'il a déjà été traité
 
+La différence à mes yeux entre RAPTOR et Trip-Based : RAPTOR s'intéresse aux *stops* et à l'heure à laquelle on peut les rejoindre, Trip-Based s'intéresse aux *trips* et à l'heure à laquelle on peut les rejoindre).
 
 NOTE : pour reconstruire le chemin final, on peut faire comme pour dijkstra, et mémoriser pour chaque trip-segment le "trip-parent" permettant de le rejoindre. Derrière, on reconstruit le chemin complet à l'envers, en partant du trip-segment permettant de rejoindre l'arrivée.
+
+
