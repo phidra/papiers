@@ -63,6 +63,8 @@ FIXME : je ne poursuis pas plus l'analyse de la réduction, j'en reste au fait q
 
 ## Earliest Arrival Query
 
+### FIXME : titre et découpage à revoir
+
 INPUT = heure de départ `τ`, stop source `p_src`, stop target `p_tgt`
 
 DONNÉES PRÉPROCESSÉES = un set des transferts utiles entre le i-ième stop d'un trip `t` et le j-ième stop d'un trip `u`.
@@ -83,12 +85,10 @@ Idem, pas encore clair...
 
 > We also use [...] a set `L` of tuples `(L, i, ∆τ)` [...] The latter indicates lines reaching the target stop ptgt
 
-Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop `p`... lequel ? Le stop cible `p_tgt` ? Ou bien n'importe quel stop ? L'article parle bien de `p_tgt`.
+Ici, on dirait qu'il s'agit des lignes capables de rejoindre le stop target`p_tgt`, on retient :
 
-D'après la formule qui suit, on dirait qu'on retient :
-
-- toutes les lignes passant par le stop `p_tgt`
-- ainsi que toutes les lignes passant par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p_tgt` depuis `q`.
+- toutes les lignes passant directement par le stop `p_tgt`
+- toutes les lignes passant indirectement par `p_tgt` (i.e. elles passent par un autre stop `q` pour lequel il existe un footpath permettant de rejoidnre `p_tgt` depuis `q`).
 
 Le `Δτ` dans la formule semble représenter le temps nécessaire depuis le i-ième stop de la ligne `L` pour rejoindre le stop `p` (il est égal à 0 si `p` est un stop de `L`, et égal au temps de marche à pied entre `q` et `p` sinon).
 
@@ -129,3 +129,30 @@ En gros, pour chaque trip empruntable depuis `p_src`, on met également à jour 
 > meaning we update the first reached stop for t and all later trips of the same line. [...] None of these later trips u can improve upon t. By marking them as reached, we eliminate them from the search and avoid redundant work.
 
 Le point important, c'est que ces trips futurs "ne nous intéressent pas" (car ils sont dominés par `t`, donc moins intéressants que lui pour notre problème), donc à partir de maintenant, on les ignore.
+
+**STEP 2** = tout ceci correspondait à la phase d'initialisation de l'algo. Le reste de l'algo consiste à dépiler les queues `Qx`, et traiter les trip-segments, jusqu'à ce qu'il n'en reste plus aucun.
+
+### Dépilage des queues
+
+Pour rappel, on a une queue par nombre de transferts :
+
+- `Q₀` est la queue des trips-segments accessibles depuis le stop de départ `p_src`
+- `Q₁` est la queue des trips-segments accessibles après un transfert
+- etc.
+
+Pour rappel, un trip-segment est un "morceau de trip", représenté par un stop de départ et un stop de fin dans un trip donné.
+
+étape 1 = on regarde si le trip-segment atteint `p_tgt` ; pour cela, on utilise le set `L` des lignes capables d'atteindre le stop `p_tgt`. Si oui et s'il n'est pas déjà dominé, on ajoute au Pareto-set le trip, son heure d'arrivée, et son nombre de transferts.
+
+étape 2 = on regarde si le trip peut-être pruned = si on a déjà trouvé un autre trajet permettant d'arriver plus tôt en `b+1` (i.e. il est inutile d'emprunter le trip, puisque dès le stop suivant, on connaît déjà un trajet plus efficace permettant de le rejoindre).
+
+étape 3 (principale) = on regarde les transferts du trip-segment (NdM : attention, il y en a moins que les transfert du trip complet, puisqu'il faut se limiter aux transferts partant d'un stop `p ∈ [b, e]`). Pour chaque transfert, si ça nous permet d'améliorer l'index `R(u)` du trip à l'autre bout du transfert (i.e. on peut attraper le transfert plus tôt), alors on ajoute le transfert à `Qn+1`, et on met à jour l'index `R(v)` de tous les trips de la même ligne que `u` mais qui partent après (même principe que précédemment : l'idée est de ne pas les traiter, car ils ne sont pas intéressants).
+
+QUESTION : à quoi correspond "avec les mains" l'index `R(t)` ? Stocke le stop le plus tôt où on peut prendre le trip (note : ou bien si un trip earlier a été atteint). En gros, ça permet de choisir de ne pas traiter un trip.
+
+----
+
+Du coup, le principe est de traiter tous les trips après, 0, 1, ... transferts. L'article fait le parallèle avec un BFS (où les trips sont les nodes du graphe, et les transferts sont les arêtes).
+
+Comme on traite les nombres de transferts croissants, à chaque étape, on traite des trips avec PLUS de transferts que ceux traités jusqu'ici -> si à une étape N on ajoute un trip au Pareto-set (donc un trip non-dominé), c'est donc qu'il a permis d'arriver plus tôt que les étapes précédentes utilisant moins de transferts. Dit autrement : on trouve le trajet permettant d'arriver le plus tôt à la destination *en dernier*. Ceux avec moins de transferts qui ont été trouvés avant sont forcément plus longs (sans quoi on n'aura pas poursuivi le traitement, vu que tous les trajets futurs auraient été dominés en terme de nombre de transferts).
+
