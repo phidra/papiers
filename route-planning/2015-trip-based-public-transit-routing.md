@@ -176,3 +176,48 @@ La différence à mes yeux entre RAPTOR et Trip-Based : RAPTOR s'intéresse aux 
 NOTE : pour reconstruire le chemin final, on peut faire comme pour dijkstra, et mémoriser pour chaque trip-segment le "trip-parent" permettant de le rejoindre. Derrière, on reconstruit le chemin complet à l'envers, en partant du trip-segment permettant de rejoindre l'arrivée.
 
 
+
+## Profile queries
+
+> We perform profile queries by running the main loop of an earliest arrival query for each distinct departure time in the given interval, preserving labels between runs to avoid redundant work.
+
+Tout est dit ici : on répète plusieurs fois l'algo, mais le fait de préserver les labels permet sans doute de pruner beaucoup de trips lors des runs finaux. Je ne regarde pas en détail, mais il y a des modifications à apporter aux labels pour que ça marche.
+
+> Later journeys dominate earlier journeys, provided arrival time and number of transfers are equal or better
+
+C'est un point intéressant : il faut voir la `profile query` comme un problème de "je veux mettre mon réveil le plus tard possible, mais tout de même arriver à l'heure à mon rendez-vous". Du coup, dans une profile-query, si deux trajets sont équivalents, celui qui PART le plus tard est plus intéressant.
+
+## Section 4 = experiments
+
+Sur Londres (20k stops, 130k trips) avec 16 threads, le temps de preprocessing est de 30 secondes (essentiellement pour la réduction des transferts). À noter que la réduction divise par 6 le nombre de transferts (121M avant, 19M après).
+
+Sur l'Allemagne (250k stops, 2.4M trips) avec 16 threads, le temps de preprocessing est de 220s, soit moins de 4 minutes. Ici, la réduction divise par 10 le nombre de transferts.
+
+Requête moyenne EAT sur Londres :
+
+- RAPTOR = 5.4 ms
+- CSA = 1.8 ms
+- TripBased = 1.2 ms
+
+D'après ce test, TripBased = 4x plus rapide que RAPTOR sur des requêtes EAT.
+
+Requête moyenne PROFILE sur Londres :
+
+- rRAPTOR = 922 ms (soit presqu'une seconde ! Mais les résultats datent de 10 ans...)
+- CSA = 466 ms
+- TripBased = 70 ms
+
+Requête moyenne PROFILE sur l'Allemagne :
+
+- TransferPatterns = 5 ms
+- TripBased = 300 ms
+
+## Section 5 = conclusion
+
+On se concentre sur les trips et les transfers entre les trips.
+
+Trade-off : on perd 30 secondes de preprocessing, on gagne le fait de répondre plus rapidement que RAPTOR (mais moins que TransferPatterns).
+
+Point intéressant = dans la phase de preprocessing, on peut customiser les transferts (p.ex. pour en ajouter/supprimer/modifier entre plusieurs lignes).
+
+Ils mentionnent sans détailler qu'en cas de màj des données (perturbations), tout le preprocesing n'a pas besoin d'être refait.
