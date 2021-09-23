@@ -102,5 +102,10 @@
 
 # Section 4 = Bounded McRAPTOR
 
-Il y a plusieurs types d'algos dans la famille, selon qu'ils permettent `σtr ≠ ∞`, et selon qu'ils calculent le restricted Pareto set exact (ou un superset plus large, contenant le restricted pareto-set).
+Il y a plusieurs types d'algos dans la famille, selon qu'ils permettent `σtr ≠ +∞` (i.e. qu'ils respectent le caractère restreint du Pareto-set sur le critère du nombre de transfers), et selon qu'ils calculent le restricted Pareto set exact (ou un superset plus large, contenant le restricted pareto-set).
+
+Approche n°1 = self-BMRAP = en gros, c'est un McRAPTOR classique, sauf que :
+
+- on maintient le meilleur EAT au stop cible `τ*` (on commence avec `τ* = +∞`, et on le mets à jour à chaque round)
+- en cours d'algo, on peut pruner les trajets lorsque leur arrivée à un stop intermédiaire est déjà supérieur à `τ* + σarr`
 
