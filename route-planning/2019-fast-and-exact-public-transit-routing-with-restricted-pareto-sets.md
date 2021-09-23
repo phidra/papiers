@@ -87,17 +87,17 @@
     - ça ne marche pas 2 = c'est très dépendant de détails d'implémentation de l'algorithme (deux algos différents renverront un front de Pareto restreint différent)
 - à l'inverse, l'approche de l'article garantit que deux algos différents renverront un front de Pareto restreint identique
 - objectif = dégager les itis qui offre un compromis inintéressant (et auraient été dégagés lors de la phase de post-processing du front de Pareto, donc jamais montrés à l'utilisateur final)
-    - on commence par calculer le front de Pareto "classique" à deux critères EAT+transfers (les itis sur ce front de Pareto sont les "anchor journeys")
-    - notation : J* est un anchor-journey, τarr(J*) est son EAT, et tr(J*) est son nombre de trips
-    - principe = chaque itinéraire sur le restricted-pareto-set ne doit pas dégrader significativement τarr(J*) et tr(J*)
-    - étant donné un iti J (sur le front de Pareto exhaustif avec plus que deux critères), son "corresponding anchor-journey" est :
-         - parmi les itis J* qui ont autant de trips ou moins de trips que J, le "corresponding" est celui qui a le PLUS de trips
-         - ça peut être le même iti (J = J*), dans ce cas, J est également sur le front de Pareto "anchor"
-         - ça peut être des itis différents, p.ex. J* a autant de correspondance, et arrive plus tôt que J (car il a ignoré le critère supplémentaire qui a fait que J est sur le front de Pareto exhaustif)
-    - PAS CLAIR : mieux comprendre pourquoi J* est toujours unique, et comment le trouver...
-- derrière, en gros, le restricted pareto-set, c'est un intermédiaire entre J* et J, dans lequel tout iti restreint est à au plus σarr et σtr de son corresponding-anchor-journey)
-    - (dit autrement, J ne "dégrade" son corresponding anchor-journey que de σarr et/ou σtr)
-    - définir σarr (resp. σtr) entre 0 et ∞ permet de positionner le front de Pareto restreint entre le front de Pareto anchor et le front de Pareto exhaustif
+    - on commence par calculer le front de Pareto "anchor", i.e. le front de Pareto classique à deux critères EAT+transfers (les itis sur ce front de Pareto sont les `anchor-journeys`)
+    - notation : `J*` est un **anchor-journey**, `τarr(J*)` est son EAT, et `tr(J*)` est son nombre de trips
+    - principe = chaque itinéraire sur le restricted-pareto-set ne doit pas dégrader significativement `τarr(J*)` et `tr(J*)`
+    - étant donné un iti `J` (sur le front de Pareto exhaustif avec plus que deux critères), son `corresponding anchor-journey` est :
+         - parmi les itis `J*` qui ont autant de trips ou moins de trips que `J`, le `corresponding` est celui qui a le PLUS de trips
+         - ça peut être le même iti (`J = J*`), dans ce cas, `J` est également sur le front de Pareto `anchor`
+         - ça peut être des itis différents, p.ex. `J*` a autant de correspondance, et arrive plus tôt que `J` (car il a ignoré le critère supplémentaire qui a fait que `J` est sur le front de Pareto exhaustif)
+    - À CLARIFIER : mieux comprendre pourquoi `J*` est toujours unique, et comment le trouver...
+- derrière, en gros, le `restricted pareto-set`, c'est un intermédiaire entre `J*` et `J`, dans lequel tout iti restreint est à au plus `σarr` et `σtr` de son `corresponding-anchor-journey`)
+    - (dit autrement, `J` ne "dégrade" son `corresponding anchor-journey` que de `σarr` et/ou `σtr`)
+    - définir `σarr` (resp. `σtr`) entre `0` et `∞` permet de positionner le front de Pareto restreint entre le front de Pareto anchor et le front de Pareto exhaustif
 - représentation graphique intéressante = quand on graphe le nb de transfers vs. l'EAT, le front de Pareto restreint est défini par des rectangles autour du front de Pareto anchor
 
 # Section 4 = Bounded McRAPTOR
