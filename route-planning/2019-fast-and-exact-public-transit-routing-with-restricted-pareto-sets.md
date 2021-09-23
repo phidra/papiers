@@ -10,6 +10,15 @@
 
 * le TL;DR reste à faire
 
+* [(ARTICLE) Fast and Exact Public Transit Routing with Restricted Pareto Sets](#article-fast-and-exact-public-transit-routing-with-restricted-pareto-sets)
+* [Abstract](#abstract)
+* [section 1 = Introduction](#section-1--introduction)
+* [section 2 = Preliminaries](#section-2--preliminaries)
+* [Section 3 = restricted pareto set](#section-3--restricted-pareto-set)
+* [Section 4 = Bounded McRAPTOR](#section-4--bounded-mcraptor)
+   * [Approche n°1 = self-BMRAP](#approche-n1--self-bmrap)
+   * [Approche n°2 =](#approche-n2-)
+
 # Abstract
 
 - le problème adressé est le problème MULTI-CRITÈRES ; un RAPTOR classique est déjà bi-critère (EAT + nombre de correspondances), mais là on parle d'encore plus de critère, comme p.ex. le temps de marche à pied
@@ -104,8 +113,15 @@
 
 Il y a plusieurs types d'algos dans la famille, selon qu'ils permettent `σtr ≠ +∞` (i.e. qu'ils respectent le caractère restreint du Pareto-set sur le critère du nombre de transfers), et selon qu'ils calculent le restricted Pareto set exact (ou un superset plus large, contenant le restricted pareto-set).
 
-Approche n°1 = self-BMRAP = en gros, c'est un McRAPTOR classique, sauf que :
+## Approche n°1 = self-BMRAP
+
+En gros, c'est un McRAPTOR classique, sauf que :
 
 - on maintient le meilleur EAT au stop cible `τ*` (on commence avec `τ* = +∞`, et on le mets à jour à chaque round)
 - en cours d'algo, on peut pruner les trajets lorsque leur arrivée à un stop intermédiaire est déjà supérieur à `τ* + σarr`
 
+Problème 1 = pour pruner efficacement, ça n'est pas le `τ* `en cours d'algo qu'il faudrait utiliser, mais le meilleur EAT final (or, on ne le connaît pas encore).
+
+Problème 2 = ça ignore complètement `σtr`, et ne se concentre que sur `σarr` -> on ne calcule pas vraiment le restricted-pareto-set, mais plutôt un surensemble.
+
+## Approche n°2 = 
