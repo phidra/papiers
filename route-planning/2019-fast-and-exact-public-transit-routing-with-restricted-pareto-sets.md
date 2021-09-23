@@ -17,7 +17,8 @@
 * [Section 3 = restricted pareto set](#section-3--restricted-pareto-set)
 * [Section 4 = Bounded McRAPTOR](#section-4--bounded-mcraptor)
    * [Approche n°1 = self-BMRAP](#approche-n1--self-bmrap)
-   * [Approche n°2 =](#approche-n2-)
+   * [Approche n°2 = target-BMRAP](#approche-n2--target-bmrap)
+   * [Approche n°3 = tight-BMRAP](#approche-n3--tight-bmrap)
 
 # Abstract
 
