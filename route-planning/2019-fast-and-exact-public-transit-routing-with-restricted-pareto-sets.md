@@ -120,8 +120,16 @@ En gros, c'est un McRAPTOR classique, sauf que :
 - on maintient le meilleur EAT au stop cible `τ*` (on commence avec `τ* = +∞`, et on le mets à jour à chaque round)
 - en cours d'algo, on peut pruner les trajets lorsque leur arrivée à un stop intermédiaire est déjà supérieur à `τ* + σarr`
 
-Problème 1 = pour pruner efficacement, ça n'est pas le `τ* `en cours d'algo qu'il faudrait utiliser, mais le meilleur EAT final (or, on ne le connaît pas encore).
+Problème 1 = pour pruner efficacement, ça n'est pas le `τ* `en cours d'algo qu'il faudrait utiliser, mais le meilleur EAT final (or, on ne le connaît pas encore). En effet, si le meilleur EAT n'est calculé qu'au dernier round, on aura passé tous les rounds suivant à ne pruner qu'avec un EAT trop tardif, et donc à garder dans le front de Pareto des itis qui auraient été à dégager avec l'EAT final.
 
 Problème 2 = ça ignore complètement `σtr`, et ne se concentre que sur `σarr` -> on ne calcule pas vraiment le restricted-pareto-set, mais plutôt un surensemble.
 
-## Approche n°2 = 
+## Approche n°2 = target-BMRAP
+
+En gros, c'est la même approche que self-BMRAP, mais qui corrige son problème n°1, en lançant d'abord un RAPTOR classique pour connaître le meilleur EAT (ou plutôt, le set de meilleurs EAT en fonction du nombre de transfers, i.e. le front de Pareto classique), puis en utiliant ce(s) meilleur(s) EAT pour pruner les trajets au cours de l'exécution du McRAPTOR.
+
+Le pruning devient exact pour le rapport à `σarr`, mais on n'est toujours pas capable de prendre en compte `σtr`.
+
+## Approche n°3 = tight-BMRAP
+
+TO BE CONTINUED
